@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
-import { LayoutDashboard, KeyRound, LogOut, Menu, ShieldCheck, Users, Zap } from 'lucide-react'
+import { LayoutDashboard, FileText, KeyRound, LogOut, Menu, ShieldCheck, Users, Zap } from 'lucide-react'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { useUiStore } from '@/shared/stores/ui.store'
 import { Permission } from '@/shared/constants/permissions'
@@ -57,6 +57,12 @@ function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <SidebarItem to="/api-tokens" icon={KeyRound} label="Tokens de API" onNavigate={onNavigate} />
         )}
       </SidebarGroup>
+
+      {can(Permission.POST_READ) && (
+        <SidebarGroup label="Conteúdo">
+          <SidebarItem to="/posts" icon={FileText} label="Posts" onNavigate={onNavigate} />
+        </SidebarGroup>
+      )}
     </Sidebar>
   )
 }

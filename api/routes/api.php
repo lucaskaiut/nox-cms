@@ -2,6 +2,8 @@
 
 use App\Modules\ACL\Http\Controllers\RoleController;
 use App\Modules\ApiToken\Http\Controllers\ApiTokenController;
+use App\Modules\Post\Http\Controllers\PostController;
+use App\Modules\Shared\Http\Controllers\FileUploadController;
 use App\Modules\Auth\Http\Controllers\AuthController;
 use App\Modules\Tenant\Http\Controllers\TenantController;
 use App\Modules\User\Http\Controllers\UserController;
@@ -36,4 +38,12 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function (): void {
     Route::get('api-tokens', [ApiTokenController::class, 'index'])->middleware('permission:api-token.read');
     Route::post('api-tokens', [ApiTokenController::class, 'store'])->middleware('permission:api-token.create');
     Route::delete('api-tokens/{apiToken}', [ApiTokenController::class, 'destroy'])->middleware('permission:api-token.delete');
+
+    Route::post('uploads', FileUploadController::class)->middleware('permission:post.create');
+
+    Route::get('posts', [PostController::class, 'index'])->middleware('permission:post.read');
+    Route::post('posts', [PostController::class, 'store'])->middleware('permission:post.create');
+    Route::get('posts/{post}', [PostController::class, 'show'])->middleware('permission:post.read');
+    Route::match(['put', 'patch'], 'posts/{post}', [PostController::class, 'update'])->middleware('permission:post.update');
+    Route::delete('posts/{post}', [PostController::class, 'destroy'])->middleware('permission:post.delete');
 });

@@ -19,4 +19,10 @@ export const queryKeys = {
     all: ['api-tokens'] as const,
     list: () => ['api-tokens', 'list'] as const,
   },
+
+  posts: {
+    all: ['posts'] as const,
+    list: (params: ListParams) => ['posts', 'list', params] as const,
+    detail: (id: string) => ['posts', 'detail', id] as const,
+  },
 } as const

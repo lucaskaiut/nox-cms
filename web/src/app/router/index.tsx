@@ -19,6 +19,9 @@ const RoleCreatePage = lazy(() => import('@/modules/roles/pages/RoleCreatePage')
 const RoleEditPage = lazy(() => import('@/modules/roles/pages/RoleEditPage'))
 const ApiTokensListPage = lazy(() => import('@/modules/api-tokens/pages/ApiTokensListPage'))
 const ApiTokenCreatePage = lazy(() => import('@/modules/api-tokens/pages/ApiTokenCreatePage'))
+const PostsListPage = lazy(() => import('@/modules/posts/pages/PostsListPage'))
+const PostCreatePage = lazy(() => import('@/modules/posts/pages/PostCreatePage'))
+const PostEditPage = lazy(() => import('@/modules/posts/pages/PostEditPage'))
 
 export const router = createBrowserRouter([
   {
@@ -102,6 +105,30 @@ export const router = createBrowserRouter([
             element: (
               <PermissionGuard permission={Permission.API_TOKEN_CREATE}>
                 <ApiTokenCreatePage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/posts',
+            element: (
+              <PermissionGuard permission={Permission.POST_READ}>
+                <PostsListPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/posts/create',
+            element: (
+              <PermissionGuard permission={Permission.POST_CREATE}>
+                <PostCreatePage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/posts/:id/edit',
+            element: (
+              <PermissionGuard permission={Permission.POST_UPDATE}>
+                <PostEditPage />
               </PermissionGuard>
             ),
           },
