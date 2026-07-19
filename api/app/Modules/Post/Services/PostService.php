@@ -36,7 +36,7 @@ class PostService
      */
     public function create(array $data): Post
     {
-        $data['slug'] = $data['slug'] ?: Str::slug($data['title']);
+        $data['slug'] = $data['slug'] ?? Str::slug($data['title']);
         $data['author_id'] = auth()->id();
 
         $post = Post::query()->create(Arr::except($data, ['categories', 'tags']));

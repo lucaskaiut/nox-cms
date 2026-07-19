@@ -24,7 +24,7 @@ class CategoryService
      */
     public function create(array $data): Category
     {
-        $data['slug'] = $data['slug'] ?: Str::slug($data['name']);
+        $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
 
         return Category::query()->create($data);
     }
