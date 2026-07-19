@@ -19,7 +19,7 @@ export default function RoleCreatePage() {
         ]}
       />
 
-      <PageContent className="max-w-3xl">
+      <PageContent>
         <RoleForm
           mode="create"
           submitting={createRole.isPending}

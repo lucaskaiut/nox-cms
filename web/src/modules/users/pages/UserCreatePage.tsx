@@ -19,7 +19,7 @@ export default function UserCreatePage() {
         ]}
       />
 
-      <PageContent className="max-w-3xl">
+      <PageContent>
         <UserForm
           mode="create"
           submitting={createUser.isPending}

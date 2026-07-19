@@ -53,7 +53,7 @@ export default function UserEditPage() {
         ]}
       />
 
-      <PageContent className="max-w-3xl">
+      <PageContent>
         {query.isPending && <FormSkeleton />}
 
         {query.isError && (

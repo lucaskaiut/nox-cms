@@ -49,7 +49,7 @@ export default function RoleEditPage() {
         ]}
       />
 
-      <PageContent className="max-w-3xl">
+      <PageContent>
         {query.isPending && <FormSkeleton />}
 
         {query.isError && (

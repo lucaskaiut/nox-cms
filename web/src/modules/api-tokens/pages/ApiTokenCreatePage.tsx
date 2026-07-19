@@ -62,7 +62,7 @@ export default function ApiTokenCreatePage() {
         ]}
       />
 
-      <PageContent className="max-w-2xl">
+      <PageContent>
         <Card>
           <CardContent>
             <Form form={form} onSubmit={onSubmit} className="space-y-6">
