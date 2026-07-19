@@ -1,0 +1,27 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Modules\Post\Models\Tag;
+use App\Modules\Tenant\Models\Tenant;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
+
+/**
+ * @extends Factory<Tag>
+ */
+class TagFactory extends Factory
+{
+    protected $model = Tag::class;
+
+    public function definition(): array
+    {
+        $name = fake()->unique()->word();
+
+        return [
+            'tenant_id' => Tenant::factory(),
+            'name' => $name,
+            'slug' => Str::slug($name),
+        ];
+    }
+}

@@ -15,6 +15,12 @@ export const Permission = {
   API_TOKEN_CREATE: 'api-token.create',
   API_TOKEN_READ: 'api-token.read',
   API_TOKEN_DELETE: 'api-token.delete',
+
+  POST_CREATE: 'post.create',
+  POST_READ: 'post.read',
+  POST_UPDATE: 'post.update',
+  POST_DELETE: 'post.delete',
+  POST_PUBLISH: 'post.publish',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
@@ -56,6 +62,16 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { value: Permission.API_TOKEN_READ, label: 'Visualizar tokens' },
       { value: Permission.API_TOKEN_CREATE, label: 'Criar tokens' },
       { value: Permission.API_TOKEN_DELETE, label: 'Revogar tokens' },
+    ],
+  },
+  {
+    label: 'Conteúdo',
+    permissions: [
+      { value: Permission.POST_READ, label: 'Visualizar posts' },
+      { value: Permission.POST_CREATE, label: 'Criar posts' },
+      { value: Permission.POST_UPDATE, label: 'Editar posts' },
+      { value: Permission.POST_DELETE, label: 'Remover posts' },
+      { value: Permission.POST_PUBLISH, label: 'Publicar posts' },
     ],
   },
 ]

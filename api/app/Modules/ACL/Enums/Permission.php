@@ -21,6 +21,13 @@ enum Permission: string
     case API_TOKEN_READ = 'api-token.read';
     case API_TOKEN_DELETE = 'api-token.delete';
 
+    // --- Aplicação: Posts ---
+    case POST_CREATE = 'post.create';
+    case POST_READ = 'post.read';
+    case POST_UPDATE = 'post.update';
+    case POST_DELETE = 'post.delete';
+    case POST_PUBLISH = 'post.publish';
+
     /**
      * @return list<string>
      */
