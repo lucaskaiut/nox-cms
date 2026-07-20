@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { API_BASE_URL } from '@/shared/api/base-url'
 
 let csrfReady = false
 
@@ -9,7 +10,7 @@ let csrfReady = false
 export async function ensureCsrfCookie(): Promise<void> {
   if (csrfReady) return
 
-  await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+  await axios.get(`${API_BASE_URL}/sanctum/csrf-cookie`, { withCredentials: true })
 
   csrfReady = true
 }

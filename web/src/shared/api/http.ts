@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { API_BASE_URL } from '@/shared/api/base-url'
 import { parseApiError } from '@/shared/api/errors'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { toast } from '@/shared/stores/toast.store'
@@ -11,7 +12,7 @@ const GUEST_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/me']
  * é armazenado no navegador. O cookie XSRF-TOKEN é anexado pelo Axios.
  */
 export const http = axios.create({
-  baseURL: '/api',
+  baseURL: `${API_BASE_URL}/api`,
   withCredentials: true,
   withXSRFToken: true,
   xsrfCookieName: 'XSRF-TOKEN',
