@@ -19,7 +19,7 @@ class PostController extends ApiController
     {
         $this->authorize('viewAny', Post::class);
 
-        return $this->paginated(PostResource::collection($this->service->paginate($request->only(['status', 'category', 'search']), (int) $request->integer('per_page', 15))));
+        return $this->paginated(PostResource::collection($this->service->paginate($request->only(['status', 'category', 'search', 'slug']), (int) $request->integer('per_page', 15))));
     }
 
     public function show(Post $post): JsonResponse

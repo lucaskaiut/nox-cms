@@ -17,6 +17,7 @@ class PostService
             ->when(Arr::get($filters, 'status'), fn ($q, $v) => $q->where('status', $v))
             ->when(Arr::get($filters, 'category'), fn ($q, $v) => $q->whereHas('categories', fn ($q) => $q->where('categories.id', $v)))
             ->when(Arr::get($filters, 'search'), fn ($q, $v) => $q->where(fn ($q) => $q->where('title', 'like', "%{$v}%")->orWhere('excerpt', 'like', "%{$v}%")))
+            ->when(Arr::get($filters, 'slug'), fn ($q, $v) => $q->where('slug', $v))
             ->orderByDesc('created_at')->paginate(min(max($perPage, 1), 100));
     }
 
