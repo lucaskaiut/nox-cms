@@ -4,6 +4,7 @@ namespace App\Modules\Webhook\Models;
 
 use App\Modules\Tenant\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Webhook extends Model
@@ -32,5 +33,10 @@ class Webhook extends Model
             'body_template' => 'array',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(WebhookLog::class);
     }
 }

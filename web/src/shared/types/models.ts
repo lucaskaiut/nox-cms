@@ -54,6 +54,16 @@ export interface Webhook {
   updated_at: string | null
 }
 
+export interface WebhookLog {
+  id: number
+  status_code: number | null
+  response_body: string | null
+  request_payload: unknown
+  error_message: string | null
+  duration_ms: number | null
+  created_at: string | null
+}
+
 export interface Session {
   user: User
   tenant: Tenant

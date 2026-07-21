@@ -1,6 +1,6 @@
 import { http } from '@/shared/api/http'
 import type { ApiResponse } from '@/shared/types/api'
-import type { Webhook } from '@/shared/types/models'
+import type { Webhook, WebhookLog } from '@/shared/types/models'
 
 export interface WebhookPayload {
   name: string
@@ -42,5 +42,11 @@ export const webhooksService = {
 
   async remove(id: number): Promise<void> {
     await http.delete(`/webhooks/${id}`)
+  },
+
+  async logs(id: number): Promise<WebhookLog[]> {
+    const response = await http.get<ApiResponse<WebhookLog[]>>(`/webhooks/${id}/logs`)
+
+    return response.data.data
   },
 }

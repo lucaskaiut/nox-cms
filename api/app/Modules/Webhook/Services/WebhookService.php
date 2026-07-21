@@ -3,6 +3,7 @@
 namespace App\Modules\Webhook\Services;
 
 use App\Modules\Webhook\Models\Webhook;
+use App\Modules\Webhook\Models\WebhookLog;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 
@@ -36,5 +37,10 @@ class WebhookService
             ->where('event', $event)
             ->where('is_active', true)
             ->get();
+    }
+
+    public function getLogs(Webhook $webhook): Collection
+    {
+        return $webhook->logs()->latest()->limit(50)->get();
     }
 }

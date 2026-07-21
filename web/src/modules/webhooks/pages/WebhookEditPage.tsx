@@ -1,13 +1,15 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import {
+  Badge,
   Button,
   ButtonLink,
   Card,
   CardContent,
+  CardHeader,
   CheckboxField,
   Form,
   Loading,
@@ -16,12 +18,15 @@ import {
   PageHeader,
   Section,
   SelectField,
+  Skeleton,
   TextareaField,
   TextField,
 } from '@/shared/design-system'
 import { isApiError } from '@/shared/api/errors'
 import { applyApiErrorsToForm } from '@/shared/utils/forms'
-import { useUpdateWebhook, useWebhookQuery } from '../hooks/useWebhooks'
+import { formatDate, formatRelative } from '@/shared/utils/format'
+import type { WebhookLog } from '@/shared/types/models'
+import { useUpdateWebhook, useWebhookLogsQuery, useWebhookQuery } from '../hooks/useWebhooks'
 import {
   webhookSchema,
   WEBHOOK_EVENTS,
@@ -34,6 +39,8 @@ export default function WebhookEditPage() {
   const navigate = useNavigate()
   const updateWebhook = useUpdateWebhook()
   const { data: webhook, isPending } = useWebhookQuery(Number(id))
+  const { data: logs, isPending: logsPending } = useWebhookLogsQuery(Number(id))
+  const [expandedLog, setExpandedLog] = useState<number | null>(null)
 
   const form = useForm<WebhookFormValues>({
     resolver: zodResolver(webhookSchema),
@@ -195,7 +202,109 @@ export default function WebhookEditPage() {
             </Form>
           </CardContent>
         </Card>
+
+        <Card className="mt-6">
+          <CardHeader title="Histórico de execuções" description="Últimas 50 tentativas de envio do webhook." />
+          <CardContent className="p-0">
+            {logsPending ? (
+              <div className="space-y-3 p-5">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : !logs || logs.length === 0 ? (
+              <p className="p-5 text-sm text-muted">Nenhuma execução registrada ainda.</p>
+            ) : (
+              <div className="divide-y divide-surface-2">
+                {logs.map((log) => (
+                  <LogEntry
+                    key={log.id}
+                    log={log}
+                    expanded={expandedLog === log.id}
+                    onToggle={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </PageContent>
     </Page>
+  )
+}
+
+function LogEntry({
+  log,
+  expanded,
+  onToggle,
+}: {
+  log: WebhookLog
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const isSuccess = log.status_code !== null && log.status_code >= 200 && log.status_code < 300
+  const isError = log.error_message !== null || (log.status_code !== null && log.status_code >= 400)
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-2/40"
+      >
+        {isSuccess ? (
+          <CheckCircle2 className="size-4 shrink-0 text-success" />
+        ) : isError ? (
+          <XCircle className="size-4 shrink-0 text-danger" />
+        ) : (
+          <AlertTriangle className="size-4 shrink-0 text-warning" />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Badge variant={isSuccess ? 'success' : isError ? 'danger' : 'warning'} className="text-[11px]">
+              {log.status_code ?? 'ERRO'}
+            </Badge>
+            <span className="text-xs text-muted">
+              <Clock className="mr-1 inline size-3" />
+              {log.duration_ms !== null ? `${log.duration_ms}ms` : '-'}
+            </span>
+          </div>
+          <p className="mt-0.5 truncate text-xs text-muted">
+            {log.error_message ?? `${formatRelative(log.created_at!)}`}
+          </p>
+        </div>
+      </button>
+      {expanded && (
+        <div className="space-y-3 bg-surface-2/30 px-5 py-4">
+          {log.error_message && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-danger">Erro</p>
+              <pre className="whitespace-pre-wrap rounded-lg bg-surface p-2.5 text-xs text-foreground">
+                {log.error_message}
+              </pre>
+            </div>
+          )}
+          {log.request_payload && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted">Payload enviado</p>
+              <pre className="max-h-48 overflow-auto rounded-lg bg-surface p-2.5 text-xs text-foreground">
+                {JSON.stringify(log.request_payload, null, 2)}
+              </pre>
+            </div>
+          )}
+          {log.response_body && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted">Resposta</p>
+              <pre className="max-h-48 overflow-auto rounded-lg bg-surface p-2.5 text-xs text-foreground">
+                {log.response_body}
+              </pre>
+            </div>
+          )}
+          <p className="text-xs text-muted">
+            Executado em {log.created_at ? formatDate(log.created_at) : '-'}
+          </p>
+        </div>
+      )}
+    </div>
   )
 }

@@ -5,6 +5,7 @@ namespace App\Modules\Webhook\Http\Controllers;
 use App\Modules\Shared\Http\Controllers\ApiController;
 use App\Modules\Webhook\Http\Requests\StoreWebhookRequest;
 use App\Modules\Webhook\Http\Requests\UpdateWebhookRequest;
+use App\Modules\Webhook\Http\Resources\WebhookLogResource;
 use App\Modules\Webhook\Http\Resources\WebhookResource;
 use App\Modules\Webhook\Models\Webhook;
 use App\Modules\Webhook\Services\WebhookService;
@@ -54,5 +55,12 @@ class WebhookController extends ApiController
         $this->service->delete($webhook);
 
         return $this->success(null, 'Webhook removido com sucesso.');
+    }
+
+    public function logs(Webhook $webhook): JsonResponse
+    {
+        $this->authorize('view', $webhook);
+
+        return $this->success(WebhookLogResource::collection($this->service->getLogs($webhook)));
     }
 }

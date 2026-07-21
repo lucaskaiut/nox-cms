@@ -53,3 +53,11 @@ export function useDeleteWebhook() {
     },
   })
 }
+
+export function useWebhookLogsQuery(id: number) {
+  return useQuery({
+    queryKey: queryKeys.webhooks.logs(id),
+    queryFn: () => webhooksService.logs(id),
+    enabled: id > 0,
+  })
+}

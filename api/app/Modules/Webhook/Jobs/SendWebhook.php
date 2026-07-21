@@ -4,10 +4,14 @@ namespace App\Modules\Webhook\Jobs;
 
 use App\Modules\Post\Models\Post;
 use App\Modules\Webhook\Models\Webhook;
+use App\Modules\Webhook\Models\WebhookLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Throwable;
 
 class SendWebhook implements ShouldQueue
 {
@@ -35,15 +39,23 @@ class SendWebhook implements ShouldQueue
             $headers['X-Webhook-Signature'] = $this->sign($payload);
         }
 
-        $request = Http::withHeaders($headers)->timeout(30)->connectTimeout(10);
+        $start = microtime(true);
 
-        match ($method) {
-            'GET' => $request->get($url, $payload),
-            'PUT' => $request->put($url, $payload),
-            'PATCH' => $request->patch($url, $payload),
-            'DELETE' => $request->delete($url, $payload),
-            default => $request->post($url, $payload),
-        };
+        try {
+            $request = Http::withHeaders($headers)->timeout(30)->connectTimeout(10);
+
+            $response = match ($method) {
+                'GET' => $request->get($url, $payload),
+                'PUT' => $request->put($url, $payload),
+                'PATCH' => $request->patch($url, $payload),
+                'DELETE' => $request->delete($url, $payload),
+                default => $request->post($url, $payload),
+            };
+
+            $this->log($payload, $response, $start);
+        } catch (ConnectionException|Throwable $e) {
+            $this->logError($payload, $e->getMessage(), $start);
+        }
     }
 
     private function buildPayload(): array
@@ -84,5 +96,26 @@ class SendWebhook implements ShouldQueue
     private function sign(array $payload): string
     {
         return 'sha256=' . hash_hmac('sha256', json_encode($payload), $this->webhook->secret);
+    }
+
+    private function log(array $payload, Response $response, float $start): void
+    {
+        WebhookLog::query()->create([
+            'webhook_id' => $this->webhook->id,
+            'status_code' => $response->status(),
+            'response_body' => Str::limit($response->body(), 10000),
+            'request_payload' => $payload,
+            'duration_ms' => (int) round((microtime(true) - $start) * 1000),
+        ]);
+    }
+
+    private function logError(array $payload, string $message, float $start): void
+    {
+        WebhookLog::query()->create([
+            'webhook_id' => $this->webhook->id,
+            'request_payload' => $payload,
+            'error_message' => $message,
+            'duration_ms' => (int) round((microtime(true) - $start) * 1000),
+        ]);
     }
 }
