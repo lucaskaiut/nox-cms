@@ -25,5 +25,6 @@ export const queryKeys = {
     list: () => ['webhooks', 'list'] as const,
     detail: (id: number) => ['webhooks', 'detail', id] as const,
     logs: (id: number) => ['webhooks', 'logs', id] as const,
+    events: () => ['webhooks', 'events'] as const,
   },
 } as const

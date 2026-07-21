@@ -47,6 +47,7 @@ Route::middleware(['auth.multi:sanctum', 'tenant'])->group(function (): void {
     Route::delete('api-tokens/{apiToken}', [ApiTokenController::class, 'destroy'])->middleware('permission:api-token.delete');
 
     Route::get('webhooks', [WebhookController::class, 'index'])->middleware('permission:webhook.read');
+    Route::get('webhooks/events', [WebhookController::class, 'events'])->middleware('permission:webhook.read');
     Route::post('webhooks', [WebhookController::class, 'store'])->middleware('permission:webhook.create');
     Route::get('webhooks/{webhook}', [WebhookController::class, 'show'])->middleware('permission:webhook.read');
     Route::match(['put', 'patch'], 'webhooks/{webhook}', [WebhookController::class, 'update'])->middleware('permission:webhook.update');

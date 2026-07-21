@@ -2,6 +2,11 @@ import { http } from '@/shared/api/http'
 import type { ApiResponse } from '@/shared/types/api'
 import type { Webhook, WebhookLog } from '@/shared/types/models'
 
+export interface WebhookEventOption {
+  value: string
+  label: string
+}
+
 export interface WebhookPayload {
   name: string
   url: string
@@ -36,6 +41,12 @@ export const webhooksService = {
 
   async update(id: number, payload: Partial<WebhookPayload>): Promise<Webhook> {
     const response = await http.patch<ApiResponse<Webhook>>(`/webhooks/${id}`, payload)
+
+    return response.data.data
+  },
+
+  async events(): Promise<WebhookEventOption[]> {
+    const response = await http.get<ApiResponse<WebhookEventOption[]>>('/webhooks/events')
 
     return response.data.data
   },

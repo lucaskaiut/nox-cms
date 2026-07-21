@@ -19,10 +19,9 @@ import {
 } from '@/shared/design-system'
 import { isApiError } from '@/shared/api/errors'
 import { applyApiErrorsToForm } from '@/shared/utils/forms'
-import { useCreateWebhook } from '../hooks/useWebhooks'
+import { useCreateWebhook, useWebhookEventsQuery } from '../hooks/useWebhooks'
 import {
   webhookSchema,
-  WEBHOOK_EVENTS,
   WEBHOOK_METHODS,
   type WebhookFormValues,
 } from '../schemas/webhook.schema'
@@ -30,6 +29,7 @@ import {
 export default function WebhookCreatePage() {
   const navigate = useNavigate()
   const createWebhook = useCreateWebhook()
+  const { data: events = [] } = useWebhookEventsQuery()
 
   const form = useForm<WebhookFormValues>({
     resolver: zodResolver(webhookSchema),
@@ -37,7 +37,7 @@ export default function WebhookCreatePage() {
       name: '',
       url: '',
       method: 'POST',
-      event: WEBHOOK_EVENTS[0].value,
+      event: '',
       headers: [],
       query_params: [],
       body_template: '',
@@ -105,7 +105,7 @@ export default function WebhookCreatePage() {
 
               <Section title="Evento e requisição">
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <SelectField name="event" label="Evento" required options={[...WEBHOOK_EVENTS]} />
+                  <SelectField name="event" label="Evento" required placeholder="Selecione um evento" options={events} />
                   <SelectField name="method" label="Método HTTP" required options={[...WEBHOOK_METHODS]} />
                   <TextField name="url" label="URL" placeholder="https://exemplo.com/hooks" required className="sm:col-span-3" />
                 </div>

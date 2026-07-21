@@ -8,12 +8,21 @@ use App\Modules\Webhook\Http\Requests\UpdateWebhookRequest;
 use App\Modules\Webhook\Http\Resources\WebhookLogResource;
 use App\Modules\Webhook\Http\Resources\WebhookResource;
 use App\Modules\Webhook\Models\Webhook;
+use App\Modules\Webhook\Services\WebhookEventRegistry;
 use App\Modules\Webhook\Services\WebhookService;
 use Illuminate\Http\JsonResponse;
 
 class WebhookController extends ApiController
 {
-    public function __construct(private readonly WebhookService $service) {}
+    public function __construct(
+        private readonly WebhookService $service,
+        private readonly WebhookEventRegistry $eventRegistry,
+    ) {}
+
+    public function events(): JsonResponse
+    {
+        return $this->success($this->eventRegistry->all());
+    }
 
     public function index(): JsonResponse
     {

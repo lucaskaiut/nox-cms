@@ -17,11 +17,11 @@ import { Permission } from '@/shared/constants/permissions'
 import { usePermissions } from '@/shared/hooks/usePermissions'
 import { formatDate } from '@/shared/utils/format'
 import type { Webhook } from '@/shared/types/models'
-import { WEBHOOK_EVENTS } from '../schemas/webhook.schema'
-import { useDeleteWebhook, useWebhooksQuery } from '../hooks/useWebhooks'
+import { useDeleteWebhook, useWebhooksQuery, useWebhookEventsQuery } from '../hooks/useWebhooks'
 
 export default function WebhooksListPage() {
   const query = useWebhooksQuery()
+  const { data: events = [] } = useWebhookEventsQuery()
   const deleteWebhook = useDeleteWebhook()
   const { can } = usePermissions()
 
@@ -33,7 +33,7 @@ export default function WebhooksListPage() {
   }
 
   const eventLabel = (event: string) =>
-    WEBHOOK_EVENTS.find((e) => e.value === event)?.label ?? event
+    events.find((e) => e.value === event)?.label ?? event
 
   const columns: Array<Column<Webhook>> = [
     {

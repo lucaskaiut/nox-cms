@@ -18,6 +18,14 @@ export function useWebhookQuery(id: number) {
   })
 }
 
+export function useWebhookEventsQuery() {
+  return useQuery({
+    queryKey: queryKeys.webhooks.events(),
+    queryFn: webhooksService.events,
+    staleTime: Infinity,
+  })
+}
+
 export function useCreateWebhook() {
   const queryClient = useQueryClient()
 
