@@ -2,7 +2,20 @@
 
 > The template is a **generic multi-tenant SaaS starter** — not a CMS, ERP, or eCommerce.
 
-**Remote:** `template` → `git@github.com:lucaskaiut/nox-skeleton.git`
+**Location:** `../nox-skeleton` (filesystem sibling of the project directory)
+
+---
+
+## Repository Layout
+
+```
+development/
+├── nox-skeleton/       ← Template (CORE only)
+└── nox-cms/            ← This project (CORE + PROJECT)
+```
+
+The template lives as a **sibling directory** on disk, not as a git remote.
+Each repository has its own `origin` remote — no cross-repo merging.
 
 ---
 
@@ -35,16 +48,42 @@ The template provides what **any SaaS** needs: multi-tenancy, ACL, auth, user/ro
 
 ---
 
+## Workflow
+
+### Changing PROJECT code
+
+Work normally in this directory. Commit to `origin`.
+
+### Changing CORE code
+
+1. Implement the change in this project directory (tests, integration).
+2. After the change works, copy the affected CORE files to `../nox-skeleton`.
+3. The filesystem paths are identical between both repos — use `rsync` or `cp`:
+
+```
+rsync -av --relative api/app/Modules/Shared/  ../nox-skeleton/
+```
+
+4. Commit in this repo; commit separately in `../nox-skeleton`.
+
+### Changing HYBRID code
+
+Implement the generic part in both repos. Keep the domain-specific part only in this project.
+
+---
+
 ## Key Rules
 
-- **Permission enum** in template contains only infrastructure permissions (user.*, tenant.*, role.*, api-token.*). Domain permissions go in the project.
+- **Permission enum** in template contains only infrastructure permissions (user.*, tenant.*, role.*, api-token.*, webhook.*). Domain permissions go in the project.
 - **Design System components** are always CORE — UI primitives, not domain logic.
 - **Decision test:** "Would an ERP, eCommerce, or CRM need this?" No → PROJECT.
+- **Never copy project files into the template.** The template must stay domain-free.
 
 ---
 
 ## Closing Checklist
 
-- [ ] Change classified?
-- [ ] If CORE: Template updated first?
-- [ ] No divergence between Template and Project?
+- [ ] Change classified (CORE / PROJECT / HYBRID)?
+- [ ] If CORE: files copied to `../nox-skeleton`?
+- [ ] If PROJECT: no template files touched?
+- [ ] Both repos committed?

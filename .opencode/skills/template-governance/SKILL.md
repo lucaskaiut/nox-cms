@@ -7,11 +7,21 @@ description: Use when the user asks about governance, template rules, CORE vs PR
 
 ## Context
 
-This repository is the **Origin Template** — a **generic multi-tenant SaaS starter**.
-It is NOT a CMS, ERP, or eCommerce. It is a foundation that any domain-specific
-application can be built upon.
+This repository is a **derived project** built on top of the **nox-skeleton**
+template — a **generic multi-tenant SaaS starter**. The template is NOT a CMS,
+ERP, or eCommerce. It is a foundation that any domain-specific application can
+be built upon.
 
-**Remote:** `template` → `git@github.com:lucaskaiut/nox-skeleton.git`
+**Template location:** `../nox-skeleton` (filesystem sibling of this project)
+
+```
+development/
+├── nox-skeleton/       ← Template (CORE only)
+└── nox-cms/            ← This project (CORE + PROJECT)
+```
+
+There is no `template` git remote. Each repo has its own `origin`.
+CORE changes are synchronized by copying files between directories.
 
 ---
 
@@ -19,8 +29,11 @@ application can be built upon.
 
 > Template = Generic Infrastructure. Project = Domain Logic.
 
-Every change in a derived project MUST be classified before implementation.
-Generic infrastructure changes must flow **Template → Project**, not the reverse.
+Every change in this project MUST be classified before implementation.
+
+- **CORE changes**: implement here, then copy to `../nox-skeleton`.
+- **PROJECT changes**: implement here only. Never touch the template.
+- **HYBRID changes**: extract the generic part, copy to template. Keep the specific part here.
 
 ---
 
@@ -40,6 +53,7 @@ The template provides infrastructure that **any SaaS** needs, regardless of doma
 | Shared utilities (ApiController, HasUuid, Document validators, ApiError) | `api/app/Modules/Shared/` |
 | File upload (generic endpoint) | `api/app/Modules/Shared/Http/Controllers/FileUploadController.php` |
 | Middleware (tenant, permission, api-token auth) | `api/app/Modules/*/Http/Middleware/` |
+| Generic webhooks (CRUD, dispatch, send jobs) | `api/app/Modules/Webhook/` |
 | Error handling / standardized JSON responses | `api/bootstrap/app.php` |
 | Database structure (tenants, users, ACL, api_tokens, sessions, jobs) | `api/database/migrations/` |
 | Factories and seeders for core entities | `api/database/factories/`, `api/database/seeders/` |
@@ -64,6 +78,7 @@ The template provides infrastructure that **any SaaS** needs, regardless of doma
 | Users module (generic CRUD) | `web/src/modules/users/` |
 | Roles module (generic CRUD + permission checkboxes) | `web/src/modules/roles/` |
 | API Tokens module (generic CRUD) | `web/src/modules/api-tokens/` |
+| Webhooks module (generic CRUD) | `web/src/modules/webhooks/` |
 
 ### Infrastructure
 
@@ -100,6 +115,7 @@ The `Permission` enum (`api/app/Modules/ACL/Enums/Permission.php`) is CORE, but
 - `tenant.read`, `tenant.update`
 - `role.create`, `role.read`, `role.update`, `role.delete`
 - `api-token.create`, `api-token.read`, `api-token.delete`
+- `webhook.create`, `webhook.read`, `webhook.update`, `webhook.delete`
 
 Domain-specific permissions (e.g., `post.create`, `product.read`, `invoice.update`)
 are defined in the PROJECT, not here. The project should extend the enum or create
@@ -119,13 +135,20 @@ template because any SaaS might need image uploads. Same for `RichTextEditor`,
 ## Classification Rules
 
 ### CORE
-Generic infrastructure reusable by ANY derived project. **Implement in the Template.**
+Generic infrastructure reusable by ANY derived project.
+- **Implement**: in this project first.
+- **Sync**: copy the changed files to `../nox-skeleton`.
+- **Commit**: in both repos, independently.
 
 ### PROJECT
-Domain-specific business logic. **Implement ONLY in the derived project.**
+Domain-specific business logic.
+- **Implement**: in this project only.
+- **Never** copy to `../nox-skeleton`.
 
 ### HYBRID
 Extract the generic part to the Template; keep the specific part in the Project.
+- **Implement**: generic part here, then copy to template.
+- **Keep**: domain-specific wiring in this project only.
 
 ---
 
@@ -135,6 +158,49 @@ Extract the generic part to the Template; keep the specific part in the Project.
 2. **Is this a UI primitive or infrastructure concern?** If YES → CORE.
 3. **Is this tied to a specific business domain?** If YES → PROJECT.
 4. **Would this exist in every SaaS regardless of niche?** If YES → CORE.
+
+---
+
+## Syncing CORE Changes (Step by Step)
+
+When a change is classified as CORE:
+
+1. **Implement** the change in this project directory (the derived project).
+2. **Test** the change works end-to-end within this project.
+3. **Identify** the exact files that are CORE (use the tables above as reference).
+4. **Copy** those files to `../nox-skeleton` preserving directory structure:
+
+```bash
+# Example: syncing a change to the Shared module
+rsync -av --relative \
+  api/app/Modules/Shared/ \
+  ../nox-skeleton/
+```
+
+For individual files:
+
+```bash
+cp api/app/Modules/ACL/Enums/Permission.php \
+   ../nox-skeleton/api/app/Modules/ACL/Enums/Permission.php
+```
+
+5. **Verify** the template still works standalone (`cd ../nox-skeleton && docker compose up`).
+6. **Commit** in this project with a message classifying the change.
+7. **Commit** in `../nox-skeleton` with the same message.
+
+### File paths are identical
+
+Both repos share the same internal structure. The project has everything the
+template has, plus PROJECT modules. This makes `rsync` trivial — CORE files
+live at the same relative paths in both repos.
+
+### What NOT to copy
+
+- `api/app/Modules/Post/`, `AiPublisher/` — any PROJECT-specific modules
+- `web/src/modules/posts/`, `categories/`, `settings/` — any PROJECT frontend
+- PROJECT-specific migrations, factories, config files
+- Permission enum entries for domain permissions (post.*, ai.*)
+- Route definitions for domain endpoints
 
 ---
 
