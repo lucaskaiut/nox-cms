@@ -28,6 +28,8 @@ class AiPublisherController extends ApiController
 
     public function publish(StoreAiPostRequest $request): JsonResponse
     {
-        return $this->created(PostResource::make($this->publisher->publish($request->validated())), 'Post criado via IA. Status: draft.');
+        $post = $this->publisher->publish($request->validated());
+
+        return $this->created(PostResource::make($post), "Post criado via IA. Status: {$post->status}.");
     }
 }

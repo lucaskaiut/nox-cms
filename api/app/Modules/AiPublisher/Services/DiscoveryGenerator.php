@@ -28,8 +28,8 @@ class DiscoveryGenerator
                 '4. Call GET /api/categories to list existing categories.',
                 '5. Create a category via POST /api/categories if needed.',
                 '6. Generate content following the editorial guide.',
-                '7. Call POST /api/ai/posts to submit as draft.',
-                '8. Posts are always created as draft.',
+                '7. Call POST /api/ai/posts to submit the post (status defaults to draft if omitted).',
+                '8. To publish directly, set `status` to `published` in the payload.',
             ],
             'tips' => [
                 'Use H2 and H3 headings.', 'Generate meta_description (max 320 chars).',

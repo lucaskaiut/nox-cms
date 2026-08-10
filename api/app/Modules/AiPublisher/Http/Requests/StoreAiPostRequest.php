@@ -2,7 +2,9 @@
 
 namespace App\Modules\AiPublisher\Http\Requests;
 
+use App\Modules\Post\Enums\PostStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAiPostRequest extends FormRequest
 {
@@ -21,6 +23,7 @@ class StoreAiPostRequest extends FormRequest
             'category' => ['nullable', 'string', 'max:255'],
             'tags' => ['nullable', 'array'], 'tags.*' => ['string', 'max:100'],
             'source' => ['nullable', 'string', 'max:100'], 'requested_by' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', 'string', Rule::enum(PostStatus::class)],
         ];
     }
 }
