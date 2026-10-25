@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'default_status' => env('AI_PUBLISHER_DEFAULT_STATUS', 'draft'),
+    'default_status' => env('AI_PUBLISHER_DEFAULT_STATUS', 'published'),
     'min_content_length' => (int) env('AI_PUBLISHER_MIN_CONTENT_LENGTH', 200),
     'editorial' => [
         'company' => env('AI_EDITORIAL_COMPANY', 'Nox Soluções em Tecnologia'),
