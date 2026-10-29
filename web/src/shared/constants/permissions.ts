@@ -29,6 +29,10 @@ export const Permission = {
 
   AI_PUBLISH: 'ai.publish',
   AI_READ: 'ai.read',
+
+  LEAD_CREATE: 'lead.create',
+  LEAD_READ: 'lead.read',
+  LEAD_UPDATE: 'lead.update',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
@@ -96,6 +100,14 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { value: Permission.AI_READ, label: 'Consultar AI Publisher' },
       { value: Permission.AI_PUBLISH, label: 'Publicar via IA' },
+    ],
+  },
+  {
+    label: 'Leads',
+    permissions: [
+      { value: Permission.LEAD_READ, label: 'Visualizar leads' },
+      { value: Permission.LEAD_CREATE, label: 'Registrar leads (site)' },
+      { value: Permission.LEAD_UPDATE, label: 'Qualificar leads' },
     ],
   },
 ]

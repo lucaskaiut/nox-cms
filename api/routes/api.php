@@ -5,6 +5,7 @@ use App\Modules\AiPublisher\Http\Controllers\AiPublisherController;
 use App\Modules\AiPublisher\Http\Controllers\EditorialSettingsController;
 use App\Modules\ApiToken\Http\Controllers\ApiTokenController;
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Lead\Http\Controllers\LeadController;
 use App\Modules\Post\Http\Controllers\CategoryController;
 use App\Modules\Post\Http\Controllers\PostController;
 use App\Modules\Post\Http\Controllers\SitemapController;
@@ -67,6 +68,12 @@ Route::middleware(['auth.multi:sanctum', 'tenant'])->group(function (): void {
     Route::get('categories/{category}', [CategoryController::class, 'show']);
     Route::match(['put', 'patch'], 'categories/{category}', [CategoryController::class, 'update'])->middleware('permission:post.update');
     Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->middleware('permission:post.delete');
+
+    Route::get('leads', [LeadController::class, 'index'])->middleware('permission:lead.read');
+    Route::post('leads', [LeadController::class, 'store'])->middleware(['throttle:leads', 'permission:lead.create']);
+    Route::get('leads/export/google-ads', [LeadController::class, 'exportGoogleAds'])->middleware('permission:lead.read');
+    Route::get('leads/{lead}', [LeadController::class, 'show'])->middleware('permission:lead.read');
+    Route::match(['put', 'patch'], 'leads/{lead}', [LeadController::class, 'update'])->middleware('permission:lead.update');
 
     Route::middleware(['throttle:ai', 'permission:ai.read'])->prefix('ai')->group(function (): void {
         Route::get('discovery', [AiPublisherController::class, 'discovery']);

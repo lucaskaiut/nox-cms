@@ -38,6 +38,11 @@ enum Permission: string
     case AI_PUBLISH = 'ai.publish';
     case AI_READ = 'ai.read';
 
+    // --- Projeto: Leads ---
+    case LEAD_CREATE = 'lead.create';
+    case LEAD_READ = 'lead.read';
+    case LEAD_UPDATE = 'lead.update';
+
     /**
      * @return list<string>
      */

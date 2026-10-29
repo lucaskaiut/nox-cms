@@ -27,4 +27,9 @@ export const queryKeys = {
     logs: (id: number) => ['webhooks', 'logs', id] as const,
     events: () => ['webhooks', 'events'] as const,
   },
+
+  leads: {
+    all: ['leads'] as const,
+    list: (params: ListParams & { status?: string; ref?: string }) => ['leads', 'list', params] as const,
+  },
 } as const

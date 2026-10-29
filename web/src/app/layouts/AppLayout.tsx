@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
-import { LayoutDashboard, FileText, FolderTree, KeyRound, LogOut, Menu, Settings, ShieldCheck, Users, Webhook, Zap } from 'lucide-react'
+import { LayoutDashboard, FileText, FolderTree, KeyRound, LogOut, Menu, MessageSquareText, Settings, ShieldCheck, Users, Webhook, Zap } from 'lucide-react'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { useUiStore } from '@/shared/stores/ui.store'
 import { Permission } from '@/shared/constants/permissions'
@@ -60,6 +60,12 @@ function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <SidebarItem to="/webhooks" icon={Webhook} label="Webhooks" onNavigate={onNavigate} />
         )}
       </SidebarGroup>
+
+      {can(Permission.LEAD_READ) && (
+        <SidebarGroup label="Comercial">
+          <SidebarItem to="/leads" icon={MessageSquareText} label="Leads" onNavigate={onNavigate} />
+        </SidebarGroup>
+      )}
 
       {can(Permission.POST_READ) && (
         <SidebarGroup label="Conteúdo">

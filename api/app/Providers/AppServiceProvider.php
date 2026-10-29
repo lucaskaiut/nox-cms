@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Modules\ACL\Models\Role;
 use App\Modules\ACL\Policies\RolePolicy;
+use App\Modules\Lead\Models\Lead;
+use App\Modules\Lead\Policies\LeadPolicy;
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Policies\PostPolicy;
 use App\Modules\Tenant\Models\Tenant;
@@ -47,6 +49,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        RateLimiter::for('leads', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
+
         RateLimiter::for('ai', function (Request $request) {
             return Limit::perMinute(30)->by($request->user()?->getKey() ?: $request->ip());
         });
@@ -59,5 +65,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(Webhook::class, WebhookPolicy::class);
+        Gate::policy(Lead::class, LeadPolicy::class);
     }
 }

@@ -22,6 +22,7 @@ const ApiTokenCreatePage = lazy(() => import('@/modules/api-tokens/pages/ApiToke
 const WebhooksListPage = lazy(() => import('@/modules/webhooks/pages/WebhooksListPage'))
 const WebhookCreatePage = lazy(() => import('@/modules/webhooks/pages/WebhookCreatePage'))
 const WebhookEditPage = lazy(() => import('@/modules/webhooks/pages/WebhookEditPage'))
+const LeadsListPage = lazy(() => import('@/modules/leads/pages/LeadsListPage'))
 const PostsListPage = lazy(() => import('@/modules/posts/pages/PostsListPage'))
 const PostCreatePage = lazy(() => import('@/modules/posts/pages/PostCreatePage'))
 const PostEditPage = lazy(() => import('@/modules/posts/pages/PostEditPage'))
@@ -110,6 +111,14 @@ export const router = createBrowserRouter([
             element: (
               <PermissionGuard permission={Permission.API_TOKEN_CREATE}>
                 <ApiTokenCreatePage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/leads',
+            element: (
+              <PermissionGuard permission={Permission.LEAD_READ}>
+                <LeadsListPage />
               </PermissionGuard>
             ),
           },
