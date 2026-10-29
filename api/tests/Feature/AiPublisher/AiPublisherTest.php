@@ -38,14 +38,14 @@ class AiPublisherTest extends TestCase
         $this->getJson('/api/ai/editorial-guide')->assertOk()->assertJsonPath('data.tone', 'profissional');
     }
 
-    public function test_ai_publish_creates_post_as_draft_and_audits_job(): void
+    public function test_ai_publish_creates_post_as_published_by_default_and_audits_job(): void
     {
         $tenant = $this->createTenantWithRoles();
         Sanctum::actingAs($this->createAdmin($tenant));
         Category::factory()->for($tenant)->create(['name' => 'Notícias', 'slug' => 'noticias']);
 
         $this->postJson('/api/ai/posts', ['title' => 'Post IA', 'content' => '<p>'.str_repeat('x ', 200).'</p>', 'category' => 'Notícias', 'tags' => ['IA'], 'source' => 'hermes'])
-            ->assertCreated()->assertJsonPath('data.status', 'draft');
+            ->assertCreated()->assertJsonPath('data.status', 'published');
         $this->assertDatabaseHas('ai_content_jobs', ['source' => 'hermes', 'status' => 'completed']);
     }
 
