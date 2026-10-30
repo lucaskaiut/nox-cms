@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { KeyRound, Plus, Trash2 } from 'lucide-react'
+import { KeyRound, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   Badge,
   Button,
@@ -18,6 +18,7 @@ import { usePermissions } from '@/shared/hooks/usePermissions'
 import { formatDate, formatRelative } from '@/shared/utils/format'
 import type { ApiToken } from '@/shared/types/models'
 import { isTokenExpired, useApiTokensQuery, useRevokeApiToken } from '../hooks/useApiTokens'
+import { TokenPermissionsModal } from '../components/TokenPermissionsModal'
 
 export default function ApiTokensListPage() {
   const query = useApiTokensQuery()
@@ -25,6 +26,9 @@ export default function ApiTokensListPage() {
   const { can } = usePermissions()
 
   const [tokenToRevoke, setTokenToRevoke] = useState<ApiToken | null>(null)
+  const [tokenToEdit, setTokenToEdit] = useState<ApiToken | null>(null)
+  const canUpdate = can(Permission.API_TOKEN_UPDATE)
+  const canDelete = can(Permission.API_TOKEN_DELETE)
 
   const confirmRevoke = () => {
     if (!tokenToRevoke) return
@@ -85,22 +89,36 @@ export default function ApiTokensListPage() {
           <Badge variant="success">Ativo</Badge>
         ),
     },
-    ...(can(Permission.API_TOKEN_DELETE)
+    ...(canUpdate || canDelete
       ? [
           {
             key: 'actions',
             header: <span className="sr-only">Ações</span>,
-            className: 'w-12 text-right',
+            className: 'w-24 text-right',
             render: (token: ApiToken) => (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setTokenToRevoke(token)}
-                aria-label={`Revogar token ${token.name}`}
-                className="text-danger hover:bg-danger-soft hover:text-danger"
-              >
-                <Trash2 className="size-4" />
-              </Button>
+              <div className="flex justify-end gap-1">
+                {canUpdate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTokenToEdit(token)}
+                    aria-label={`Editar escopos do token ${token.name}`}
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTokenToRevoke(token)}
+                    aria-label={`Revogar token ${token.name}`}
+                    className="text-danger hover:bg-danger-soft hover:text-danger"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                )}
+              </div>
             ),
           } satisfies Column<ApiToken>,
         ]
@@ -147,6 +165,10 @@ export default function ApiTokensListPage() {
           }
         />
       </PageContent>
+
+      {tokenToEdit && (
+        <TokenPermissionsModal key={tokenToEdit.id} token={tokenToEdit} onClose={() => setTokenToEdit(null)} />
+      )}
 
       <ConfirmDialog
         open={tokenToRevoke !== null}

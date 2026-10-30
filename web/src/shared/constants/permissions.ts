@@ -14,6 +14,7 @@ export const Permission = {
 
   API_TOKEN_CREATE: 'api-token.create',
   API_TOKEN_READ: 'api-token.read',
+  API_TOKEN_UPDATE: 'api-token.update',
   API_TOKEN_DELETE: 'api-token.delete',
 
   WEBHOOK_CREATE: 'webhook.create',
@@ -73,6 +74,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { value: Permission.API_TOKEN_READ, label: 'Visualizar tokens' },
       { value: Permission.API_TOKEN_CREATE, label: 'Criar tokens' },
+      { value: Permission.API_TOKEN_UPDATE, label: 'Editar escopos de tokens' },
       { value: Permission.API_TOKEN_DELETE, label: 'Revogar tokens' },
     ],
   },

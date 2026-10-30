@@ -13,6 +13,11 @@ export interface IssuedApiToken {
   api_token: ApiToken
 }
 
+export interface ApiTokenUpdatePayload {
+  name?: string
+  permissions: string[] | null
+}
+
 export const apiTokensService = {
   async list(): Promise<ApiToken[]> {
     const response = await http.get<ApiResponse<ApiToken[]>>('/api-tokens')
@@ -22,6 +27,12 @@ export const apiTokensService = {
 
   async create(payload: ApiTokenPayload): Promise<IssuedApiToken> {
     const response = await http.post<ApiResponse<IssuedApiToken>>('/api-tokens', payload)
+
+    return response.data.data
+  },
+
+  async update(id: number, payload: ApiTokenUpdatePayload): Promise<ApiToken> {
+    const response = await http.patch<ApiResponse<ApiToken>>(`/api-tokens/${id}`, payload)
 
     return response.data.data
   },

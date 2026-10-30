@@ -19,6 +19,7 @@ enum Permission: string
 
     case API_TOKEN_CREATE = 'api-token.create';
     case API_TOKEN_READ = 'api-token.read';
+    case API_TOKEN_UPDATE = 'api-token.update';
     case API_TOKEN_DELETE = 'api-token.delete';
 
     // --- Projeto: Posts ---

@@ -36,6 +36,18 @@ class ApiTokenService
         return new IssuedApiToken($apiToken, $plainTextToken);
     }
 
+    /**
+     * Altera nome e/ou escopos. O segredo e a expiração não mudam.
+     *
+     * @param  array{name?: string, permissions?: list<string>|null}  $attributes  permissions null = acesso irrestrito
+     */
+    public function update(ApiToken $apiToken, array $attributes): ApiToken
+    {
+        $apiToken->fill(Arr::only($attributes, ['name', 'permissions']))->save();
+
+        return $apiToken->refresh();
+    }
+
     public function looksLikeApiToken(?string $plainTextToken): bool
     {
         return is_string($plainTextToken) && Str::startsWith($plainTextToken, ApiToken::PREFIX);

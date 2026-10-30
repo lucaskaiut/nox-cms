@@ -256,6 +256,57 @@ class ApiTokenTest extends TestCase
         $this->postJson('/api/testing/users-create', [], $headers)->assertForbidden();
     }
 
+    public function test_admin_can_update_token_permissions_without_changing_secret(): void
+    {
+        $tenant = $this->createTenantWithRoles();
+
+        $plain = ApiToken::PREFIX.Str::random(48);
+        $token = ApiToken::factory()->for($tenant)->create([
+            'token_hash' => ApiToken::hash($plain),
+            'permissions' => [Permission::TENANT_READ->value],
+        ]);
+
+        Sanctum::actingAs($this->createAdmin($tenant));
+
+        $this->patchJson("/api/api-tokens/{$token->getKey()}", [
+            'name' => 'Site',
+            'permissions' => [Permission::TENANT_READ->value, Permission::USER_READ->value],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Site')
+            ->assertJsonPath('data.permissions', [Permission::TENANT_READ->value, Permission::USER_READ->value]);
+
+        $this->assertDatabaseHas('api_tokens', ['id' => $token->getKey(), 'token_hash' => ApiToken::hash($plain)]);
+
+        $this->forgetTenantContext();
+
+        $this->getJson('/api/testing/users-read', ['Authorization' => "Bearer {$plain}"])->assertOk();
+    }
+
+    public function test_update_requires_permission_and_respects_tenant(): void
+    {
+        $tenantA = $this->createTenantWithRoles();
+        $tenantB = $this->createTenantWithRoles(['domain' => 'outro.com.br']);
+
+        $own = ApiToken::factory()->for($tenantA)->create(['permissions' => []]);
+        $foreign = ApiToken::factory()->for($tenantB)->create(['permissions' => []]);
+
+        Sanctum::actingAs($this->createMember($tenantA));
+        $this->patchJson("/api/api-tokens/{$own->getKey()}", ['permissions' => null])->assertForbidden();
+
+        Sanctum::actingAs($this->createAdmin($tenantA));
+        $this->patchJson("/api/api-tokens/{$foreign->getKey()}", ['permissions' => null])->assertNotFound();
+        $this->patchJson("/api/api-tokens/{$own->getKey()}", ['permissions' => ['permissao.inexistente']])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['permissions.0']);
+        $this->patchJson("/api/api-tokens/{$own->getKey()}", ['name' => 'Sem escopos'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['permissions']);
+
+        $this->assertSame([], $own->fresh()->permissions);
+        $this->assertSame([], $foreign->fresh()->permissions);
+    }
+
     public function test_token_permissions_must_be_valid_enums(): void
     {
         $tenant = $this->createTenantWithRoles();

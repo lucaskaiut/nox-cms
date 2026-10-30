@@ -3,6 +3,7 @@
 namespace App\Modules\ApiToken\Http\Controllers;
 
 use App\Modules\ApiToken\Http\Requests\StoreApiTokenRequest;
+use App\Modules\ApiToken\Http\Requests\UpdateApiTokenRequest;
 use App\Modules\ApiToken\Http\Resources\ApiTokenResource;
 use App\Modules\ApiToken\Models\ApiToken;
 use App\Modules\ApiToken\Services\ApiTokenService;
@@ -34,6 +35,13 @@ class ApiTokenController extends ApiController
             'token' => $issued->plainTextToken,
             'api_token' => ApiTokenResource::make($issued->apiToken),
         ], 'Token criado com sucesso. Guarde-o em local seguro: ele não será exibido novamente.');
+    }
+
+    public function update(UpdateApiTokenRequest $request, ApiToken $apiToken): JsonResponse
+    {
+        $apiToken = $this->service->update($apiToken, $request->validated());
+
+        return $this->success(ApiTokenResource::make($apiToken), 'Token atualizado com sucesso.');
     }
 
     public function destroy(ApiToken $apiToken): JsonResponse

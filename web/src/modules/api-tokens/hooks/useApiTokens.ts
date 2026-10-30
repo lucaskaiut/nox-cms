@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { toast } from '@/shared/stores/toast.store'
-import { apiTokensService, type ApiTokenPayload } from '../services/api-tokens.service'
+import {
+  apiTokensService,
+  type ApiTokenPayload,
+  type ApiTokenUpdatePayload,
+} from '../services/api-tokens.service'
 
 export function useApiTokensQuery() {
   return useQuery({
@@ -17,6 +21,19 @@ export function useCreateApiToken() {
     mutationFn: (payload: ApiTokenPayload) => apiTokensService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.apiTokens.all })
+    },
+  })
+}
+
+export function useUpdateApiToken() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, ...payload }: ApiTokenUpdatePayload & { id: number }) =>
+      apiTokensService.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.apiTokens.all })
+      toast.success('Token atualizado', 'Os novos escopos já valem para as próximas requisições.')
     },
   })
 }
