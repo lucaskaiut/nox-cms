@@ -11,6 +11,8 @@ class LeadResource extends JsonResource
     {
         return [
             'id' => $this->uuid, 'ref' => $this->ref, 'channel' => $this->channel,
+            'name' => $this->name, 'email' => $this->email, 'phone' => $this->phone,
+            'company' => $this->company, 'message' => $this->message,
             'status' => $this->status?->value, 'status_label' => $this->status?->label(),
             'gclid' => $this->gclid, 'gbraid' => $this->gbraid, 'wbraid' => $this->wbraid,
             'utm_source' => $this->utm_source, 'utm_medium' => $this->utm_medium, 'utm_campaign' => $this->utm_campaign,

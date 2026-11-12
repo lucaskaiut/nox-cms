@@ -8,6 +8,12 @@ interface LeadEditModalProps {
   onClose: () => void
 }
 
+/** Número digitado no site → link do WhatsApp (assume Brasil quando vier sem o 55). */
+function whatsappUrl(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  return `https://wa.me/${digits.length <= 11 ? `55${digits}` : digits}`
+}
+
 /** Montado com `key={lead.id}`: o estado inicial vem sempre do lead aberto. */
 export function LeadEditModal({ lead, onClose }: LeadEditModalProps) {
   const updateLead = useUpdateLead()
@@ -32,7 +38,11 @@ export function LeadEditModal({ lead, onClose }: LeadEditModalProps) {
       open
       onClose={onClose}
       title={`Lead ${lead.ref}`}
-      description="Marque como qualificado quando a conversa no WhatsApp tiver potencial real de projeto."
+      description={
+        lead.channel === 'form'
+          ? 'Marque como qualificado quando o contato tiver potencial real de projeto.'
+          : 'O registro nasce no clique do botão: confirme que a mensagem com este código chegou no WhatsApp. Marque como qualificado quando a conversa tiver potencial real de projeto.'
+      }
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -45,6 +55,32 @@ export function LeadEditModal({ lead, onClose }: LeadEditModalProps) {
       }
     >
       <div className="space-y-4">
+        {lead.channel === 'form' && (
+          <dl className="space-y-2 rounded-lg border border-surface-3 p-3 text-sm">
+            <div>
+              <dt className="text-xs text-muted">Nome</dt>
+              <dd className="text-foreground">
+                {lead.name}
+                {lead.company ? ` · ${lead.company}` : ''}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted">Contato</dt>
+              <dd className="flex flex-wrap gap-x-3 text-foreground">
+                {lead.phone && (
+                  <a className="underline" href={whatsappUrl(lead.phone)} target="_blank" rel="noreferrer">
+                    {lead.phone}
+                  </a>
+                )}
+                {lead.email && <a className="underline" href={`mailto:${lead.email}`}>{lead.email}</a>}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted">Mensagem</dt>
+              <dd className="whitespace-pre-line text-foreground">{lead.message}</dd>
+            </div>
+          </dl>
+        )}
         <Field label="Status" htmlFor="lead-status">
           <Select
             id="lead-status"

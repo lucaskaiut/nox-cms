@@ -6,7 +6,12 @@ export type LeadStatus = 'new' | 'qualified' | 'won' | 'lost' | 'spam'
 export interface Lead {
   id: string
   ref: string
-  channel: string
+  channel: 'whatsapp' | 'form' | string
+  name: string | null
+  email: string | null
+  phone: string | null
+  company: string | null
+  message: string | null
   status: LeadStatus
   status_label: string
   gclid: string | null
@@ -34,6 +39,11 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   won: 'Fechado',
   lost: 'Perdido',
   spam: 'Spam',
+}
+
+export const LEAD_CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  form: 'Formulário',
 }
 
 export const LEAD_STATUS_OPTIONS = Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => ({ value, label }))

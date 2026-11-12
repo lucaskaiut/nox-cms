@@ -12,6 +12,8 @@ use Illuminate\Support\Collection;
 
 class LeadService
 {
+    private const CONTACT_FIELDS = ['name', 'email', 'phone', 'company', 'message'];
+
     private const ATTRIBUTION_FIELDS = [
         'gclid', 'gbraid', 'wbraid', 'utm_source', 'utm_medium', 'utm_campaign',
         'utm_term', 'utm_content', 'landing_path',
@@ -27,7 +29,8 @@ class LeadService
 
     /**
      * Registro idempotente pelo `ref`: o site reenvia o mesmo código a cada
-     * clique na sessão. A atribuição do primeiro registro é preservada.
+     * clique na sessão. A atribuição do primeiro registro é preservada; os dados
+     * de contato (só no formulário) ficam com o envio mais recente.
      */
     public function register(array $data): Lead
     {
@@ -37,6 +40,10 @@ class LeadService
             $lead->fill(Arr::only($data, [...self::ATTRIBUTION_FIELDS, 'ref', 'channel']));
             $lead->status = LeadStatus::NEW;
             $lead->clicked_at = Arr::get($data, 'captured_at');
+        }
+
+        if ($lead->channel === 'form') {
+            $lead->fill(Arr::only($data, self::CONTACT_FIELDS));
         }
 
         $lead->click_path = $data['click_path'] ?? $lead->click_path;

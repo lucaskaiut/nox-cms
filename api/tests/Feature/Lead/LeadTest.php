@@ -81,6 +81,56 @@ class LeadTest extends TestCase
         $this->postJson('/api/leads', $this->payload(['ref' => 'NX-ABC235', 'landing_path' => 'https://evil.example']), $headers)->assertUnprocessable();
     }
 
+    private function formPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'ref' => 'NX-FRM234', 'channel' => 'form', 'consent' => 'denied',
+            'name' => 'Maria Souza', 'email' => 'maria@empresa.com.br', 'phone' => '(41) 99999-0000',
+            'company' => 'Empresa X', 'message' => 'Precisamos de um sistema de pedidos integrado ao ERP.',
+            'landing_path' => '/desenvolvimento-de-sistemas', 'click_path' => '/desenvolvimento-de-sistemas',
+        ], $overrides);
+    }
+
+    public function test_form_lead_is_registered_with_contact_data_and_without_click_id(): void
+    {
+        $tenant = $this->createTenantWithRoles();
+
+        $this->postJson('/api/leads', $this->formPayload(), $this->tokenHeaders($tenant))
+            ->assertCreated()
+            ->assertJsonPath('data.channel', 'form')
+            ->assertJsonPath('data.name', 'Maria Souza')
+            ->assertJsonPath('data.email', 'maria@empresa.com.br')
+            ->assertJsonPath('data.message', 'Precisamos de um sistema de pedidos integrado ao ERP.')
+            ->assertJsonPath('data.gclid', null);
+
+        $this->postJson('/api/leads', $this->formPayload(['ref' => 'NX-FRM235', 'gclid' => 'Cj0-pago']), $this->tokenHeaders($tenant))
+            ->assertCreated()
+            ->assertJsonPath('data.gclid', 'Cj0-pago');
+    }
+
+    public function test_form_lead_requires_name_message_and_one_contact(): void
+    {
+        $headers = $this->tokenHeaders($this->createTenantWithRoles());
+
+        $this->postJson('/api/leads', $this->formPayload(['name' => '', 'message' => '']), $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors(['name', 'message']);
+        $this->postJson('/api/leads', $this->formPayload(['email' => null, 'phone' => null]), $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors(['email', 'phone']);
+        $this->postJson('/api/leads', $this->formPayload(['email' => 'nao-e-email']), $headers)
+            ->assertUnprocessable()->assertJsonValidationErrors('email');
+        $this->postJson('/api/leads', $this->formPayload(['email' => null]), $headers)->assertCreated();
+    }
+
+    public function test_whatsapp_lead_ignores_contact_fields(): void
+    {
+        $tenant = $this->createTenantWithRoles();
+
+        $this->postJson('/api/leads', $this->payload(['name' => 'Injetado', 'message' => 'x']), $this->tokenHeaders($tenant))
+            ->assertCreated()
+            ->assertJsonPath('data.name', null)
+            ->assertJsonPath('data.message', null);
+    }
+
     public function test_admin_lists_and_qualifies_lead(): void
     {
         $tenant = $this->createTenantWithRoles();

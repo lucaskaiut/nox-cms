@@ -22,7 +22,13 @@ import { usePermissions } from '@/shared/hooks/usePermissions'
 import { formatDateTime } from '@/shared/utils/format'
 import { LeadEditModal } from '../components/LeadEditModal'
 import { useExportGoogleAds, useLeadsQuery } from '../hooks/useLeads'
-import { LEAD_STATUS_LABELS, LEAD_STATUS_OPTIONS, type Lead, type LeadStatus } from '../services/leads.service'
+import {
+  LEAD_CHANNEL_LABELS,
+  LEAD_STATUS_LABELS,
+  LEAD_STATUS_OPTIONS,
+  type Lead,
+  type LeadStatus,
+} from '../services/leads.service'
 
 const STATUS_BADGE: Record<LeadStatus, 'neutral' | 'primary' | 'success' | 'warning' | 'danger'> = {
   new: 'primary',
@@ -73,12 +79,33 @@ export default function LeadsListPage() {
       render: (lead) => <Badge variant={STATUS_BADGE[lead.status]}>{LEAD_STATUS_LABELS[lead.status]}</Badge>,
     },
     {
+      key: 'contact',
+      header: 'Contato',
+      render: (lead) =>
+        lead.channel === 'form' ? (
+          <div className="min-w-0">
+            <span className="block max-w-56 truncate text-foreground" title={lead.name ?? undefined}>
+              {lead.name}
+              {lead.company ? ` · ${lead.company}` : ''}
+            </span>
+            <span className="block max-w-56 truncate text-xs text-muted">
+              {[lead.phone, lead.email].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+        ) : (
+          <span className="text-muted">WhatsApp (pelo código)</span>
+        ),
+    },
+    {
       key: 'origin',
       header: 'Origem',
       render: (lead) => (
         <div className="min-w-0">
           <span className="block text-foreground">
-            {[lead.utm_source ?? 'google', lead.utm_medium ?? 'cpc'].join(' / ')}
+            {LEAD_CHANNEL_LABELS[lead.channel] ?? lead.channel} ·{' '}
+            {lead.gclid || lead.gbraid || lead.wbraid
+              ? [lead.utm_source ?? 'google', lead.utm_medium ?? 'cpc'].join(' / ')
+              : 'orgânico / direto'}
           </span>
           <span className="block max-w-56 truncate text-xs text-muted" title={lead.landing_path ?? undefined}>
             {lead.landing_path ?? '—'}
@@ -122,7 +149,7 @@ export default function LeadsListPage() {
     <Page>
       <PageHeader
         title="Leads"
-        description="Contatos de WhatsApp vindos de anúncios. Busque pelo código que aparece na mensagem do cliente."
+        description="Formulários do site e cliques no WhatsApp vindos de anúncios. Busque pelo código que aparece na mensagem do cliente."
         breadcrumb={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Leads' }]}
         actions={
           <Can permission={Permission.LEAD_READ}>
@@ -165,7 +192,7 @@ export default function LeadsListPage() {
               description={
                 filtered
                   ? 'Confira o código digitado ou ajuste o filtro de status.'
-                  : 'Os leads aparecem quando alguém vindo de um anúncio clica no WhatsApp do site.'
+                  : 'Os leads aparecem quando alguém envia o formulário do site ou, vindo de um anúncio, clica no WhatsApp.'
               }
             />
           }
