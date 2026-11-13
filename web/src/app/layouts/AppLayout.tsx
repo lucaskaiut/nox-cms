@@ -1,11 +1,12 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
-import { LayoutDashboard, FileText, FolderTree, KeyRound, LogOut, Menu, MessageSquareText, Settings, ShieldCheck, Users, Webhook, Zap } from 'lucide-react'
+import { Columns3, LayoutDashboard, FileText, FolderTree, KeyRound, ListOrdered, LogOut, Menu, MessageCircle, MessageSquareText, MessagesSquare, Settings, ShieldCheck, Users, Webhook, Zap } from 'lucide-react'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { useUiStore } from '@/shared/stores/ui.store'
 import { Permission } from '@/shared/constants/permissions'
 import { usePermissions } from '@/shared/hooks/usePermissions'
 import { useLogout } from '@/modules/auth/hooks/useAuth'
+import { useUnreadQuery } from '@/modules/whatsapp/hooks/useWhatsApp'
 import {
   Avatar,
   Container,
@@ -39,6 +40,7 @@ function Brand() {
 
 function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const { can } = usePermissions()
+  const unread = useUnreadQuery()
 
   return (
     <Sidebar header={<Brand />}>
@@ -61,9 +63,34 @@ function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </SidebarGroup>
 
-      {can(Permission.LEAD_READ) && (
+      {(can(Permission.LEAD_READ) || can(Permission.WHATSAPP_READ)) && (
         <SidebarGroup label="Comercial">
-          <SidebarItem to="/leads" icon={MessageSquareText} label="Leads" onNavigate={onNavigate} />
+          {can(Permission.LEAD_READ) && (
+            <SidebarItem to="/crm" icon={Columns3} label="Funil" onNavigate={onNavigate} />
+          )}
+          {can(Permission.WHATSAPP_READ) && (
+            <SidebarItem
+              to="/conversas"
+              icon={MessagesSquare}
+              label="Conversas"
+              badge={unread.data?.conversations}
+              onNavigate={onNavigate}
+            />
+          )}
+          {can(Permission.LEAD_READ) && (
+            <SidebarItem to="/leads" icon={MessageSquareText} label="Leads" onNavigate={onNavigate} />
+          )}
+        </SidebarGroup>
+      )}
+
+      {(can(Permission.PIPELINE_MANAGE) || can(Permission.WHATSAPP_MANAGE)) && (
+        <SidebarGroup label="Configurações">
+          {can(Permission.PIPELINE_MANAGE) && (
+            <SidebarItem to="/crm/etapas" icon={ListOrdered} label="Etapas do funil" onNavigate={onNavigate} />
+          )}
+          {can(Permission.WHATSAPP_MANAGE) && (
+            <SidebarItem to="/settings/whatsapp" icon={MessageCircle} label="WhatsApp" onNavigate={onNavigate} />
+          )}
         </SidebarGroup>
       )}
 

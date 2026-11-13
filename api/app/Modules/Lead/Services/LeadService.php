@@ -2,6 +2,9 @@
 
 namespace App\Modules\Lead\Services;
 
+use App\Modules\Crm\Enums\StageOutcome;
+use App\Modules\Crm\Models\LeadActivity;
+use App\Modules\Crm\Services\PipelineService;
 use App\Modules\Lead\Enums\LeadStatus;
 use App\Modules\Lead\Models\Lead;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -9,9 +12,12 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use App\Modules\User\Models\User;
 
 class LeadService
 {
+    public function __construct(private readonly PipelineService $pipeline) {}
+
     private const CONTACT_FIELDS = ['name', 'email', 'phone', 'company', 'message'];
 
     private const ATTRIBUTION_FIELDS = [
@@ -21,7 +27,7 @@ class LeadService
 
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Lead::query()
+        return Lead::query()->with(['stage', 'conversation'])
             ->when(Arr::get($filters, 'status'), fn ($q, $v) => $q->where('status', $v))
             ->when(Arr::get($filters, 'ref'), fn ($q, $v) => $q->where('ref', strtoupper($v)))
             ->orderByDesc('created_at')->paginate(min(max($perPage, 1), 100));
@@ -35,11 +41,15 @@ class LeadService
     public function register(array $data): Lead
     {
         $lead = Lead::query()->firstOrNew(['ref' => $data['ref']]);
+        $isNew = ! $lead->exists;
 
-        if (! $lead->exists) {
+        if ($isNew) {
             $lead->fill(Arr::only($data, [...self::ATTRIBUTION_FIELDS, 'ref', 'channel']));
             $lead->status = LeadStatus::NEW;
             $lead->clicked_at = Arr::get($data, 'captured_at');
+            $stage = $this->pipeline->firstStage();
+            $lead->stage_id = $stage?->id;
+            $lead->stage_changed_at = now();
         }
 
         if ($lead->channel === 'form') {
@@ -49,6 +59,7 @@ class LeadService
         $lead->click_path = $data['click_path'] ?? $lead->click_path;
         $lead->consent = $data['consent'] ?? $lead->consent ?? 'unknown';
         $lead->contacted_at = now();
+        $lead->last_activity_at = now();
 
         try {
             $lead->save();
@@ -59,12 +70,16 @@ class LeadService
             return $this->register($data);
         }
 
+        if ($isNew) {
+            $this->pipeline->log($lead, LeadActivity::CREATED, null, ['channel' => $lead->channel]);
+        }
+
         return $lead;
     }
 
-    public function update(Lead $lead, array $data): Lead
+    public function update(Lead $lead, array $data, ?User $user = null): Lead
     {
-        $lead->fill(Arr::only($data, ['status', 'notes', 'conversion_value']));
+        $lead->fill(Arr::only($data, ['status', 'notes', 'conversion_value', 'name', 'email', 'phone', 'company']));
 
         $status = $lead->status;
         if ($status instanceof LeadStatus && $status->isQualified() && $lead->qualified_at === null) {
@@ -73,7 +88,14 @@ class LeadService
 
         $lead->save();
 
-        return $lead->refresh();
+        // Status alterado fora do quadro: leva o cartão para a primeira etapa
+        // com o mesmo resultado, para o funil não divergir do status.
+        if ($lead->wasChanged('status') && ($outcome = StageOutcome::fromLeadStatus($lead->status))
+            && $lead->stage?->outcome !== $outcome && ($stage = $this->pipeline->firstStage($outcome))) {
+            $this->pipeline->moveLead($lead, $stage, $user);
+        }
+
+        return $lead->refresh()->load(['stage', 'conversation']);
     }
 
     /**

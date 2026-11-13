@@ -23,6 +23,10 @@ const WebhooksListPage = lazy(() => import('@/modules/webhooks/pages/WebhooksLis
 const WebhookCreatePage = lazy(() => import('@/modules/webhooks/pages/WebhookCreatePage'))
 const WebhookEditPage = lazy(() => import('@/modules/webhooks/pages/WebhookEditPage'))
 const LeadsListPage = lazy(() => import('@/modules/leads/pages/LeadsListPage'))
+const PipelineBoardPage = lazy(() => import('@/modules/crm/pages/PipelineBoardPage'))
+const PipelineStagesPage = lazy(() => import('@/modules/crm/pages/PipelineStagesPage'))
+const ConversationsPage = lazy(() => import('@/modules/whatsapp/pages/ConversationsPage'))
+const WhatsAppSettingsPage = lazy(() => import('@/modules/whatsapp/pages/WhatsAppSettingsPage'))
 const PostsListPage = lazy(() => import('@/modules/posts/pages/PostsListPage'))
 const PostCreatePage = lazy(() => import('@/modules/posts/pages/PostCreatePage'))
 const PostEditPage = lazy(() => import('@/modules/posts/pages/PostEditPage'))
@@ -119,6 +123,38 @@ export const router = createBrowserRouter([
             element: (
               <PermissionGuard permission={Permission.LEAD_READ}>
                 <LeadsListPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/crm',
+            element: (
+              <PermissionGuard permission={Permission.LEAD_READ}>
+                <PipelineBoardPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/crm/etapas',
+            element: (
+              <PermissionGuard permission={Permission.PIPELINE_MANAGE}>
+                <PipelineStagesPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/conversas/:id?',
+            element: (
+              <PermissionGuard permission={Permission.WHATSAPP_READ}>
+                <ConversationsPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/settings/whatsapp',
+            element: (
+              <PermissionGuard permission={Permission.WHATSAPP_MANAGE}>
+                <WhatsAppSettingsPage />
               </PermissionGuard>
             ),
           },

@@ -53,6 +53,14 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->ip());
         });
 
+        RateLimiter::for('whatsapp-webhook', function (Request $request) {
+            return Limit::perMinute(600)->by($request->ip());
+        });
+
+        RateLimiter::for('whatsapp-send', function (Request $request) {
+            return Limit::perMinute(40)->by($request->user()?->getKey() ?: $request->ip());
+        });
+
         RateLimiter::for('ai', function (Request $request) {
             return Limit::perMinute(30)->by($request->user()?->getKey() ?: $request->ip());
         });

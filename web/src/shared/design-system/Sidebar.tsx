@@ -42,11 +42,14 @@ export function SidebarItem({
   to,
   icon: Icon,
   label,
+  badge,
   onNavigate,
 }: {
   to: string
   icon: LucideIcon
   label: string
+  /** Contador opcional (ex.: mensagens não lidas). Some quando 0. */
+  badge?: number
   onNavigate?: () => void
 }) {
   return (
@@ -64,6 +67,13 @@ export function SidebarItem({
     >
       <Icon className="size-4.5 shrink-0" aria-hidden="true" />
       <span className="truncate">{label}</span>
+      {badge ? (
+        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+          <span className="sr-only">,</span>
+          {badge > 99 ? '99+' : badge}
+          <span className="sr-only"> não lidas</span>
+        </span>
+      ) : null}
     </NavLink>
   )
 }

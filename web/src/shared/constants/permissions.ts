@@ -34,6 +34,12 @@ export const Permission = {
   LEAD_CREATE: 'lead.create',
   LEAD_READ: 'lead.read',
   LEAD_UPDATE: 'lead.update',
+
+  PIPELINE_MANAGE: 'pipeline.manage',
+
+  WHATSAPP_READ: 'whatsapp.read',
+  WHATSAPP_SEND: 'whatsapp.send',
+  WHATSAPP_MANAGE: 'whatsapp.manage',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
@@ -109,7 +115,16 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { value: Permission.LEAD_READ, label: 'Visualizar leads' },
       { value: Permission.LEAD_CREATE, label: 'Registrar leads (site)' },
-      { value: Permission.LEAD_UPDATE, label: 'Qualificar leads' },
+      { value: Permission.LEAD_UPDATE, label: 'Qualificar leads e mover no funil' },
+      { value: Permission.PIPELINE_MANAGE, label: 'Configurar etapas do funil' },
+    ],
+  },
+  {
+    label: 'WhatsApp',
+    permissions: [
+      { value: Permission.WHATSAPP_READ, label: 'Ver conversas' },
+      { value: Permission.WHATSAPP_SEND, label: 'Responder conversas' },
+      { value: Permission.WHATSAPP_MANAGE, label: 'Configurar conexão com a Meta' },
     ],
   },
 ]

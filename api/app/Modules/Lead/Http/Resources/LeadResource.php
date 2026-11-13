@@ -22,6 +22,18 @@ class LeadResource extends JsonResource
             'qualified_at' => $this->qualified_at?->toIso8601String(),
             'conversion_value' => $this->conversion_value, 'notes' => $this->notes,
             'created_at' => $this->created_at?->toIso8601String(),
+            'stage' => $this->whenLoaded('stage', fn () => $this->stage ? [
+                'id' => $this->stage->uuid, 'name' => $this->stage->name,
+                'color' => $this->stage->color, 'outcome' => $this->stage->outcome->value,
+            ] : null),
+            'stage_changed_at' => $this->stage_changed_at?->toIso8601String(),
+            'last_activity_at' => $this->last_activity_at?->toIso8601String(),
+            'conversation' => $this->whenLoaded('conversation', fn () => $this->conversation ? [
+                'id' => $this->conversation->uuid,
+                'unread_count' => $this->conversation->unread_count,
+                'last_inbound_at' => $this->conversation->last_inbound_at?->toIso8601String(),
+                'last_message_at' => $this->conversation->last_message_at?->toIso8601String(),
+            ] : null),
         ];
     }
 }

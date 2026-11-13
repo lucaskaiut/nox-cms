@@ -44,6 +44,14 @@ enum Permission: string
     case LEAD_READ = 'lead.read';
     case LEAD_UPDATE = 'lead.update';
 
+    // --- Projeto: CRM ---
+    case PIPELINE_MANAGE = 'pipeline.manage';
+
+    // --- Projeto: WhatsApp ---
+    case WHATSAPP_READ = 'whatsapp.read';
+    case WHATSAPP_SEND = 'whatsapp.send';
+    case WHATSAPP_MANAGE = 'whatsapp.manage';
+
     /**
      * @return list<string>
      */

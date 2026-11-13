@@ -28,7 +28,7 @@ class LeadController extends ApiController
     {
         $this->authorize('view', $lead);
 
-        return $this->success(LeadResource::make($lead));
+        return $this->success(LeadResource::make($lead->load(['stage', 'conversation'])));
     }
 
     public function store(StoreLeadRequest $request): JsonResponse
@@ -42,7 +42,7 @@ class LeadController extends ApiController
     {
         $this->authorize('update', $lead);
 
-        return $this->success(LeadResource::make($this->service->update($lead, $request->validated())), 'Lead atualizado com sucesso.');
+        return $this->success(LeadResource::make($this->service->update($lead, $request->validated(), $request->user())), 'Lead atualizado com sucesso.');
     }
 
     public function exportGoogleAds(Request $request): Response
