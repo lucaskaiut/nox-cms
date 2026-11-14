@@ -47,3 +47,42 @@ export function getInitials(name: string): string {
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('')
 }
+
+const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+const currencyPreciseFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+const numberFormatter = new Intl.NumberFormat('pt-BR')
+const compactFormatter = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
+
+export function formatCurrency(value: number | string | null | undefined, precise = false): string {
+  if (value === null || value === undefined || value === '') return '—'
+
+  return (precise ? currencyPreciseFormatter : currencyFormatter).format(Number(value))
+}
+
+export function formatNumber(value: number | null | undefined, compact = false): string {
+  if (value === null || value === undefined) return '—'
+
+  return compact && Math.abs(value) >= 10_000 ? compactFormatter.format(value) : numberFormatter.format(value)
+}
+
+export function formatPercent(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined) return '—'
+
+  return `${value.toLocaleString('pt-BR', { maximumFractionDigits: digits })}%`
+}
+
+/** Data local (YYYY-MM-DD) para inputs type="date". */
+export function toDateInput(date: Date): string {
+  const offset = date.getTimezoneOffset() * 60_000
+
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10)
+}
+
+/** ISO → valor de input datetime-local (horário local). */
+export function toDateTimeInput(value: string | Date | null | undefined): string {
+  if (!value) return ''
+  const date = typeof value === 'string' ? new Date(value) : value
+  const offset = date.getTimezoneOffset() * 60_000
+
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+}

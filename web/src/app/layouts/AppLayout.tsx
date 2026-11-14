@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router'
-import { Columns3, LayoutDashboard, FileText, FolderTree, KeyRound, ListOrdered, LogOut, Menu, MessageCircle, MessageSquareText, MessagesSquare, Settings, ShieldCheck, Users, Webhook, Zap } from 'lucide-react'
+import { BarChart3, CalendarCheck, Columns3, LayoutDashboard, FileText, FolderTree, KeyRound, ListOrdered, LogOut, MailPlus, Menu, MessageCircle, MessageSquareText, MessagesSquare, Plug, Receipt, Settings, ShieldCheck, SlidersHorizontal, Users, Webhook, Zap } from 'lucide-react'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { useUiStore } from '@/shared/stores/ui.store'
 import { Permission } from '@/shared/constants/permissions'
@@ -68,6 +68,9 @@ function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           {can(Permission.LEAD_READ) && (
             <SidebarItem to="/crm" icon={Columns3} label="Funil" onNavigate={onNavigate} />
           )}
+          {can(Permission.LEAD_READ) && (
+            <SidebarItem to="/tarefas" icon={CalendarCheck} label="Tarefas" onNavigate={onNavigate} />
+          )}
           {can(Permission.WHATSAPP_READ) && (
             <SidebarItem
               to="/conversas"
@@ -80,13 +83,31 @@ function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           {can(Permission.LEAD_READ) && (
             <SidebarItem to="/leads" icon={MessageSquareText} label="Leads" onNavigate={onNavigate} />
           )}
+          {can(Permission.NURTURE_MANAGE) && (
+            <SidebarItem to="/nutricao" icon={MailPlus} label="Nutrição" onNavigate={onNavigate} />
+          )}
         </SidebarGroup>
       )}
 
-      {(can(Permission.PIPELINE_MANAGE) || can(Permission.WHATSAPP_MANAGE)) && (
+      {can(Permission.REPORT_READ) && (
+        <SidebarGroup label="Relatórios">
+          <SidebarItem to="/relatorios/conteudo" icon={BarChart3} label="Conteúdo que converte" onNavigate={onNavigate} />
+        </SidebarGroup>
+      )}
+
+      {(can(Permission.PIPELINE_MANAGE) || can(Permission.WHATSAPP_MANAGE) || can(Permission.INTEGRATION_MANAGE)) && (
         <SidebarGroup label="Configurações">
           {can(Permission.PIPELINE_MANAGE) && (
             <SidebarItem to="/crm/etapas" icon={ListOrdered} label="Etapas do funil" onNavigate={onNavigate} />
+          )}
+          {can(Permission.PIPELINE_MANAGE) && (
+            <SidebarItem to="/settings/crm" icon={SlidersHorizontal} label="CRM e alertas" onNavigate={onNavigate} />
+          )}
+          {can(Permission.INTEGRATION_MANAGE) && (
+            <SidebarItem to="/settings/integracoes" icon={Plug} label="Integrações Google" onNavigate={onNavigate} />
+          )}
+          {can(Permission.INTEGRATION_MANAGE) && (
+            <SidebarItem to="/settings/investimento" icon={Receipt} label="Investimento em anúncios" onNavigate={onNavigate} />
           )}
           {can(Permission.WHATSAPP_MANAGE) && (
             <SidebarItem to="/settings/whatsapp" icon={MessageCircle} label="WhatsApp" onNavigate={onNavigate} />

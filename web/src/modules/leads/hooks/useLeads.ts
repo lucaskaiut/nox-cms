@@ -18,7 +18,8 @@ export function useUpdateLead() {
     mutationFn: ({ id, ...payload }: LeadPayload & { id: string }) => leadsService.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.leads.all })
-      toast.success('Lead atualizado', 'O status foi salvo.')
+      queryClient.invalidateQueries({ queryKey: queryKeys.pipeline.all })
+      toast.success('Lead atualizado', 'As alterações foram salvas.')
     },
   })
 }

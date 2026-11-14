@@ -40,6 +40,10 @@ export const Permission = {
   WHATSAPP_READ: 'whatsapp.read',
   WHATSAPP_SEND: 'whatsapp.send',
   WHATSAPP_MANAGE: 'whatsapp.manage',
+
+  REPORT_READ: 'report.read',
+  INTEGRATION_MANAGE: 'integration.manage',
+  NURTURE_MANAGE: 'nurture.manage',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
@@ -116,7 +120,15 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { value: Permission.LEAD_READ, label: 'Visualizar leads' },
       { value: Permission.LEAD_CREATE, label: 'Registrar leads (site)' },
       { value: Permission.LEAD_UPDATE, label: 'Qualificar leads e mover no funil' },
-      { value: Permission.PIPELINE_MANAGE, label: 'Configurar etapas do funil' },
+      { value: Permission.PIPELINE_MANAGE, label: 'Configurar funil, tags, alertas e resposta automática' },
+      { value: Permission.NURTURE_MANAGE, label: 'Criar e editar sequências de nutrição' },
+    ],
+  },
+  {
+    label: 'Relatórios e integrações',
+    permissions: [
+      { value: Permission.REPORT_READ, label: 'Ver relatórios de funil e conteúdo' },
+      { value: Permission.INTEGRATION_MANAGE, label: 'Configurar Google Ads, Search Console e investimento' },
     ],
   },
   {

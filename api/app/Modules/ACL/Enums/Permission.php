@@ -52,6 +52,11 @@ enum Permission: string
     case WHATSAPP_SEND = 'whatsapp.send';
     case WHATSAPP_MANAGE = 'whatsapp.manage';
 
+    // --- Projeto: Relatórios, integrações e nutrição ---
+    case REPORT_READ = 'report.read';
+    case INTEGRATION_MANAGE = 'integration.manage';
+    case NURTURE_MANAGE = 'nurture.manage';
+
     /**
      * @return list<string>
      */

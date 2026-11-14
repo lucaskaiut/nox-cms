@@ -25,7 +25,7 @@ class Post extends Model
         'meta_title', 'meta_description', 'meta_keywords', 'canonical_url',
         'og_title', 'og_description', 'og_image',
         'schema_type', 'allow_indexing', 'include_in_sitemap', 'is_featured',
-        'published_at', 'author_id',
+        'published_at', 'author_id', 'cta_offer', 'cta_text', 'cta_url',
     ];
 
     protected function casts(): array
@@ -39,6 +39,8 @@ class Post extends Model
         ];
     }
 
+    public function leads(): \Illuminate\Database\Eloquent\Relations\HasMany { return $this->hasMany(\App\Modules\Lead\Models\Lead::class); }
+    public function searchMetrics(): \Illuminate\Database\Eloquent\Relations\HasMany { return $this->hasMany(\App\Modules\SearchConsole\Models\PostSearchMetric::class); }
     public function author(): BelongsTo { return $this->belongsTo(User::class, 'author_id'); }
     public function categories(): BelongsToMany { return $this->belongsToMany(Category::class, 'post_categories'); }
     public function tags(): BelongsToMany { return $this->belongsToMany(Tag::class, 'post_tags'); }

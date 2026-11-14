@@ -9,6 +9,7 @@ export interface Post {
   schema_type: string | null; allow_indexing: boolean; include_in_sitemap: boolean; is_featured: boolean
   published_at: string | null; author: { id: string; name: string } | null
   categories: Array<{ id: number; name: string; slug: string }>; tags: Array<{ id: number; name: string; slug: string }>
+  cta_offer: string | null; cta_text: string | null; cta_url: string | null
   created_at: string | null; updated_at: string | null
 }
 
@@ -26,6 +27,7 @@ export interface PostPayload {
   og_title?: string | null; og_description?: string | null; og_image?: string | null
   schema_type?: string | null; allow_indexing?: boolean; include_in_sitemap?: boolean; is_featured?: boolean
   published_at?: string | null; categories?: number[]; tags?: string[]
+  cta_offer?: string | null; cta_text?: string | null; cta_url?: string | null
 }
 
 export interface PostFilters extends ListParams { status?: string; category?: number; search?: string }

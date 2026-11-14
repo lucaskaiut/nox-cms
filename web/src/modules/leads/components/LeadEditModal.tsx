@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button, Field, Input, Modal, Select, Textarea } from '@/shared/design-system'
+import { useLostReasonsQuery } from '@/modules/crm/hooks/useCrm'
 import { useUpdateLead } from '../hooks/useLeads'
 import { LEAD_STATUS_OPTIONS, type Lead, type LeadStatus } from '../services/leads.service'
 
@@ -20,6 +21,8 @@ export function LeadEditModal({ lead, onClose }: LeadEditModalProps) {
   const [status, setStatus] = useState<LeadStatus>(lead.status)
   const [value, setValue] = useState(lead.conversion_value ?? '')
   const [notes, setNotes] = useState(lead.notes ?? '')
+  const [lostReason, setLostReason] = useState(lead.lost_reason ?? '')
+  const reasons = useLostReasonsQuery()
 
   const save = () => {
     updateLead.mutate(
@@ -28,6 +31,7 @@ export function LeadEditModal({ lead, onClose }: LeadEditModalProps) {
         status,
         notes: notes.trim() || null,
         conversion_value: value === '' ? null : Number(value),
+        ...(status === 'lost' ? { lost_reason: lostReason || null } : {}),
       },
       { onSuccess: onClose },
     )
@@ -89,10 +93,23 @@ export function LeadEditModal({ lead, onClose }: LeadEditModalProps) {
             onChange={(e) => setStatus(e.target.value as LeadStatus)}
           />
         </Field>
+        {status === 'lost' && (
+          <Field label="Motivo da perda" htmlFor="lead-lost-reason">
+            <Select
+              id="lead-lost-reason"
+              value={lostReason}
+              onChange={(e) => setLostReason(e.target.value)}
+              options={[
+                { value: '', label: 'Não informado' },
+                ...[...new Set([...(reasons.data ?? []), ...(lead.lost_reason ? [lead.lost_reason] : [])])].map((r) => ({ value: r, label: r })),
+              ]}
+            />
+          </Field>
+        )}
         <Field
           label="Valor estimado (R$)"
           htmlFor="lead-value"
-          hint="Opcional. Vai junto na conversão offline para o Google Ads."
+          hint="Opcional. Usado na receita dos relatórios e enviado com a conversão de venda ao Google Ads."
         >
           <Input
             id="lead-value"

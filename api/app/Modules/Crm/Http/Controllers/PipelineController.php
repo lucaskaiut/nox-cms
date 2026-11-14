@@ -30,10 +30,10 @@ class PipelineController extends ApiController
 
     public function move(Request $request, Lead $lead): JsonResponse
     {
-        $data = $request->validate(['stage_id' => ['required', 'uuid']]);
+        $data = $request->validate(['stage_id' => ['required', 'uuid'], 'lost_reason' => ['nullable', 'string', 'max:120']]);
         $stage = PipelineStage::query()->where('uuid', $data['stage_id'])->firstOrFail();
 
-        return $this->success(LeadResource::make($this->pipeline->moveLead($lead, $stage, $request->user())));
+        return $this->success(LeadResource::make($this->pipeline->moveLead($lead, $stage, $request->user(), $data['lost_reason'] ?? null)));
     }
 
     public function activities(Lead $lead): JsonResponse

@@ -21,14 +21,14 @@ class LeadController extends ApiController
     {
         $this->authorize('viewAny', Lead::class);
 
-        return $this->paginated(LeadResource::collection($this->service->paginate($request->only(['status', 'ref']), (int) $request->integer('per_page', 15))));
+        return $this->paginated(LeadResource::collection($this->service->paginate($request->only(['status', 'ref', 'tag', 'post', 'search']), (int) $request->integer('per_page', 15))));
     }
 
     public function show(Lead $lead): JsonResponse
     {
         $this->authorize('view', $lead);
 
-        return $this->success(LeadResource::make($lead->load(['stage', 'conversation'])));
+        return $this->success(LeadResource::make($lead->load([...LeadService::RELATIONS, 'conversionUploads'])));
     }
 
     public function store(StoreLeadRequest $request): JsonResponse
@@ -43,6 +43,14 @@ class LeadController extends ApiController
         $this->authorize('update', $lead);
 
         return $this->success(LeadResource::make($this->service->update($lead, $request->validated(), $request->user())), 'Lead atualizado com sucesso.');
+    }
+
+    public function syncTags(Request $request, Lead $lead): JsonResponse
+    {
+        $this->authorize('update', $lead);
+        $data = $request->validate(['tags' => ['present', 'array', 'max:20'], 'tags.*' => ['string', 'max:60']]);
+
+        return $this->success(LeadResource::make($this->service->syncTags($lead, $data['tags'], $request->user())), 'Tags atualizadas.');
     }
 
     public function exportGoogleAds(Request $request): Response

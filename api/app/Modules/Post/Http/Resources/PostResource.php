@@ -18,6 +18,7 @@ class PostResource extends JsonResource
             'og_title' => $this->og_title, 'og_description' => $this->og_description, 'og_image' => $this->og_image,
             'allow_indexing' => $this->allow_indexing, 'include_in_sitemap' => $this->include_in_sitemap, 'is_featured' => $this->is_featured,
             'published_at' => $this->published_at?->toIso8601String(),
+            'cta_offer' => $this->cta_offer, 'cta_text' => $this->cta_text, 'cta_url' => $this->cta_url,
             'author' => $this->whenLoaded('author', fn () => ['id' => $this->author->uuid, 'name' => $this->author->name]),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'tags' => $this->whenLoaded('tags', fn () => $this->tags->map(fn ($t) => ['id' => $t->getKey(), 'name' => $t->name, 'slug' => $t->slug])),

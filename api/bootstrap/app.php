@@ -27,6 +27,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        __DIR__.'/../app/Modules/Crm/Console',
+        __DIR__.'/../app/Modules/GoogleAds/Console',
+        __DIR__.'/../app/Modules/SearchConsole/Console',
+        __DIR__.'/../app/Modules/Nurture/Console',
+        __DIR__.'/../app/Modules/Post/Console',
+    ])
     ->withEvents(discover: [
         __DIR__.'/../app/Modules/Post/Events',
         __DIR__.'/../app/Modules/Webhook/Listeners',

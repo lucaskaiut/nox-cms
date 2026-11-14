@@ -22,8 +22,12 @@ class LeadActivity extends Model
     public const NOTE = 'note';
     public const STAGE_CHANGED = 'stage_changed';
     public const WHATSAPP_LINKED = 'whatsapp_linked';
+    public const EMAIL_SENT = 'email_sent';
+    public const TASK_CREATED = 'task_created';
+    public const TASK_COMPLETED = 'task_completed';
+    public const CONVERSION_UPLOADED = 'conversion_uploaded';
 
-    protected $fillable = ['lead_id', 'user_id', 'type', 'body', 'meta'];
+    protected $fillable = ['tenant_id', 'lead_id', 'user_id', 'type', 'body', 'meta'];
 
     protected function casts(): array
     {

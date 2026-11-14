@@ -32,6 +32,13 @@ const PostCreatePage = lazy(() => import('@/modules/posts/pages/PostCreatePage')
 const PostEditPage = lazy(() => import('@/modules/posts/pages/PostEditPage'))
 const CategoriesPage = lazy(() => import('@/modules/categories/pages/CategoriesPage'))
 const EditorialSettingsPage = lazy(() => import('@/modules/settings/pages/EditorialSettingsPage'))
+const CrmSettingsPage = lazy(() => import('@/modules/settings/pages/CrmSettingsPage'))
+const AdSpendPage = lazy(() => import('@/modules/settings/pages/AdSpendPage'))
+const IntegrationsPage = lazy(() => import('@/modules/integrations/pages/IntegrationsPage'))
+const TasksPage = lazy(() => import('@/modules/tasks/pages/TasksPage'))
+const ContentReportPage = lazy(() => import('@/modules/reports/pages/ContentReportPage'))
+const SequencesPage = lazy(() => import('@/modules/nurture/pages/SequencesPage'))
+const SequenceEditPage = lazy(() => import('@/modules/nurture/pages/SequenceEditPage'))
 
 export const router = createBrowserRouter([
   {
@@ -139,6 +146,70 @@ export const router = createBrowserRouter([
             element: (
               <PermissionGuard permission={Permission.PIPELINE_MANAGE}>
                 <PipelineStagesPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/tarefas',
+            element: (
+              <PermissionGuard permission={Permission.LEAD_READ}>
+                <TasksPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/relatorios/conteudo',
+            element: (
+              <PermissionGuard permission={Permission.REPORT_READ}>
+                <ContentReportPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/nutricao',
+            element: (
+              <PermissionGuard permission={Permission.NURTURE_MANAGE}>
+                <SequencesPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/nutricao/nova',
+            element: (
+              <PermissionGuard permission={Permission.NURTURE_MANAGE}>
+                <SequenceEditPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/nutricao/:id',
+            element: (
+              <PermissionGuard permission={Permission.NURTURE_MANAGE}>
+                <SequenceEditPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/settings/crm',
+            element: (
+              <PermissionGuard permission={Permission.PIPELINE_MANAGE}>
+                <CrmSettingsPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/settings/integracoes',
+            element: (
+              <PermissionGuard permission={Permission.INTEGRATION_MANAGE}>
+                <IntegrationsPage />
+              </PermissionGuard>
+            ),
+          },
+          {
+            path: '/settings/investimento',
+            element: (
+              <PermissionGuard permission={Permission.INTEGRATION_MANAGE}>
+                <AdSpendPage />
               </PermissionGuard>
             ),
           },

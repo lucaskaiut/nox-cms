@@ -2,7 +2,12 @@
 
 namespace App\Modules\Lead\Services;
 
+use App\Modules\Analytics\Services\AttributionService;
 use App\Modules\Crm\Enums\StageOutcome;
+use App\Modules\Crm\Models\LeadTag;
+use App\Modules\Lead\Events\LeadCreated;
+use App\Modules\Lead\Events\LeadStatusChanged;
+use App\Modules\Lead\Events\LeadTagged;
 use App\Modules\Crm\Models\LeadActivity;
 use App\Modules\Crm\Services\PipelineService;
 use App\Modules\Lead\Enums\LeadStatus;
@@ -16,7 +21,12 @@ use App\Modules\User\Models\User;
 
 class LeadService
 {
-    public function __construct(private readonly PipelineService $pipeline) {}
+    public function __construct(
+        private readonly PipelineService $pipeline,
+        private readonly AttributionService $attribution,
+    ) {}
+
+    public const RELATIONS = ['stage', 'conversation', 'tags', 'post'];
 
     private const CONTACT_FIELDS = ['name', 'email', 'phone', 'company', 'message'];
 
@@ -27,9 +37,14 @@ class LeadService
 
     public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Lead::query()->with(['stage', 'conversation'])
+        return Lead::query()->with(self::RELATIONS)
             ->when(Arr::get($filters, 'status'), fn ($q, $v) => $q->where('status', $v))
             ->when(Arr::get($filters, 'ref'), fn ($q, $v) => $q->where('ref', strtoupper($v)))
+            ->when(Arr::get($filters, 'tag'), fn ($q, $v) => $q->whereHas('tags', fn ($q) => $q->where('lead_tags.uuid', $v)))
+            ->when(Arr::get($filters, 'post'), fn ($q, $v) => $q->whereHas('post', fn ($q) => $q->where('posts.uuid', $v)))
+            ->when(Arr::get($filters, 'search'), fn ($q, $v) => $q->where(fn ($q) => $q
+                ->where('name', 'like', "%{$v}%")->orWhere('email', 'like', "%{$v}%")
+                ->orWhere('company', 'like', "%{$v}%")->orWhere('ref', 'like', '%'.strtoupper($v).'%')))
             ->orderByDesc('created_at')->paginate(min(max($perPage, 1), 100));
     }
 
@@ -44,7 +59,8 @@ class LeadService
         $isNew = ! $lead->exists;
 
         if ($isNew) {
-            $lead->fill(Arr::only($data, [...self::ATTRIBUTION_FIELDS, 'ref', 'channel']));
+            $lead->fill(Arr::only($data, [...self::ATTRIBUTION_FIELDS, 'ref', 'channel', 'cta']));
+            $lead->post_id = $this->attribution->resolvePost($data['post_slug'] ?? null, $data['landing_path'] ?? null, $data['click_path'] ?? null)?->id;
             $lead->status = LeadStatus::NEW;
             $lead->clicked_at = Arr::get($data, 'captured_at');
             $stage = $this->pipeline->firstStage();
@@ -54,6 +70,9 @@ class LeadService
 
         if ($lead->channel === 'form') {
             $lead->fill(Arr::only($data, self::CONTACT_FIELDS));
+            if (filled($data['cta'] ?? null)) {
+                $lead->cta = $data['cta'];
+            }
         }
 
         $lead->click_path = $data['click_path'] ?? $lead->click_path;
@@ -72,6 +91,7 @@ class LeadService
 
         if ($isNew) {
             $this->pipeline->log($lead, LeadActivity::CREATED, null, ['channel' => $lead->channel]);
+            LeadCreated::dispatch($lead);
         }
 
         return $lead;
@@ -79,11 +99,14 @@ class LeadService
 
     public function update(Lead $lead, array $data, ?User $user = null): Lead
     {
-        $lead->fill(Arr::only($data, ['status', 'notes', 'conversion_value', 'name', 'email', 'phone', 'company']));
+        $previousStatus = $lead->status;
+        $lead->fill(Arr::only($data, ['notes', 'conversion_value', 'name', 'email', 'phone', 'company']));
 
-        $status = $lead->status;
-        if ($status instanceof LeadStatus && $status->isQualified() && $lead->qualified_at === null) {
-            $lead->qualified_at = now();
+        if (isset($data['status'])) {
+            $status = $data['status'] instanceof LeadStatus ? $data['status'] : LeadStatus::from($data['status']);
+            $this->pipeline->applyStatus($lead, $status, $data['lost_reason'] ?? null);
+        } elseif (array_key_exists('lost_reason', $data) && $lead->status === LeadStatus::LOST) {
+            $lead->lost_reason = $data['lost_reason'];
         }
 
         $lead->save();
@@ -92,10 +115,40 @@ class LeadService
         // com o mesmo resultado, para o funil não divergir do status.
         if ($lead->wasChanged('status') && ($outcome = StageOutcome::fromLeadStatus($lead->status))
             && $lead->stage?->outcome !== $outcome && ($stage = $this->pipeline->firstStage($outcome))) {
-            $this->pipeline->moveLead($lead, $stage, $user);
+            $this->pipeline->moveLead($lead, $stage, $user, $lead->lost_reason);
         }
 
-        return $lead->refresh()->load(['stage', 'conversation']);
+        if ($previousStatus !== $lead->status) {
+            LeadStatusChanged::dispatch($lead, $previousStatus);
+        } elseif ($lead->wasChanged('conversion_value') && $lead->status === LeadStatus::WON) {
+            // Valor informado depois de ganhar: a conversão "ganho" leva o valor.
+            LeadStatusChanged::dispatch($lead, $previousStatus);
+        }
+
+        return $lead->refresh()->load(self::RELATIONS);
+    }
+
+    /**
+     * Substitui as tags do lead. Nomes novos viram tags; dispara LeadTagged
+     * com as que foram acrescentadas (gatilho de sequências de nutrição).
+     *
+     * @param  list<string>  $names
+     */
+    public function syncTags(Lead $lead, array $names, ?User $user = null): Lead
+    {
+        $ids = collect($names)->map(fn ($n) => trim((string) $n))->filter()->unique(fn ($n) => mb_strtolower($n))
+            ->map(fn ($name) => LeadTag::query()->firstOrCreate(['name' => mb_substr($name, 0, 60)])->id)
+            ->values()->all();
+
+        $changes = $lead->tags()->sync($ids);
+
+        if ($changes['attached'] !== []) {
+            $names = LeadTag::query()->whereIn('id', $changes['attached'])->pluck('name')->implode(', ');
+            $this->pipeline->log($lead, LeadActivity::NOTE, "Tags adicionadas: {$names}", ['kind' => 'tags'], $user);
+            LeadTagged::dispatch($lead, $changes['attached']);
+        }
+
+        return $lead->load(self::RELATIONS);
     }
 
     /**

@@ -5,7 +5,16 @@ use App\Modules\AiPublisher\Http\Controllers\AiPublisherController;
 use App\Modules\AiPublisher\Http\Controllers\EditorialSettingsController;
 use App\Modules\ApiToken\Http\Controllers\ApiTokenController;
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Analytics\Http\Controllers\AdSpendController;
+use App\Modules\Analytics\Http\Controllers\ReportController;
+use App\Modules\Crm\Http\Controllers\CrmSettingsController;
+use App\Modules\Crm\Http\Controllers\LeadTagController;
+use App\Modules\Crm\Http\Controllers\LeadTaskController;
 use App\Modules\Crm\Http\Controllers\PipelineController;
+use App\Modules\GoogleAds\Http\Controllers\GoogleAdsController;
+use App\Modules\Nurture\Http\Controllers\NurtureController;
+use App\Modules\Nurture\Http\Controllers\UnsubscribeController;
+use App\Modules\SearchConsole\Http\Controllers\SearchConsoleController;
 use App\Modules\Crm\Http\Controllers\PipelineStageController;
 use App\Modules\Lead\Http\Controllers\LeadController;
 use App\Modules\Post\Http\Controllers\CategoryController;
@@ -21,6 +30,12 @@ use App\Modules\WhatsApp\Http\Controllers\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('sitemap.xml', SitemapController::class);
+
+// Descadastro dos e-mails automáticos (link assinado; POST = one-click do cliente de e-mail).
+Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
+    Route::get('public/unsubscribe/{lead}', [UnsubscribeController::class, 'show'])->name('leads.unsubscribe');
+    Route::post('public/unsubscribe/{lead}', [UnsubscribeController::class, 'store']);
+});
 
 // Webhook da WhatsApp Cloud API (público; autenticado pela assinatura da Meta).
 Route::middleware('throttle:whatsapp-webhook')->group(function (): void {
@@ -98,6 +113,67 @@ Route::middleware(['auth.multi:sanctum', 'tenant'])->group(function (): void {
     Route::post('leads/{lead}/move', [PipelineController::class, 'move'])->middleware('permission:lead.update');
     Route::get('leads/{lead}/activities', [PipelineController::class, 'activities'])->middleware('permission:lead.read');
     Route::post('leads/{lead}/notes', [PipelineController::class, 'note'])->middleware('permission:lead.update');
+    Route::put('leads/{lead}/tags', [LeadController::class, 'syncTags'])->middleware('permission:lead.update');
+
+    // --- CRM: tags, tarefas, leads parados ---
+    Route::get('lead-tags', [LeadTagController::class, 'index'])->middleware('permission:lead.read');
+    Route::match(['put', 'patch'], 'lead-tags/{tag}', [LeadTagController::class, 'update'])->middleware('permission:pipeline.manage');
+    Route::delete('lead-tags/{tag}', [LeadTagController::class, 'destroy'])->middleware('permission:pipeline.manage');
+    Route::get('tasks', [LeadTaskController::class, 'index'])->middleware('permission:lead.read');
+    Route::post('leads/{lead}/tasks', [LeadTaskController::class, 'store'])->middleware('permission:lead.update');
+    Route::match(['put', 'patch'], 'tasks/{task}', [LeadTaskController::class, 'update'])->middleware('permission:lead.update');
+    Route::delete('tasks/{task}', [LeadTaskController::class, 'destroy'])->middleware('permission:lead.update');
+    Route::get('crm/stale-leads', [LeadTaskController::class, 'stale'])->middleware('permission:lead.read');
+    Route::get('crm/assignees', [LeadTaskController::class, 'assignees'])->middleware('permission:lead.read');
+    Route::get('crm/lost-reasons', [CrmSettingsController::class, 'lostReasons'])->middleware('permission:lead.read');
+    Route::get('crm/settings', [CrmSettingsController::class, 'show'])->middleware('permission:pipeline.manage');
+    Route::match(['put', 'patch'], 'crm/settings', [CrmSettingsController::class, 'update'])->middleware('permission:pipeline.manage');
+    Route::post('crm/settings/test', [CrmSettingsController::class, 'test'])->middleware(['permission:pipeline.manage', 'throttle:5,1']);
+
+    // --- Nutrição por e-mail ---
+    Route::get('leads/{lead}/enrollments', [NurtureController::class, 'leadEnrollments'])->middleware('permission:lead.read');
+    Route::post('leads/{lead}/enrollments', [NurtureController::class, 'enroll'])->middleware('permission:lead.update');
+    Route::post('enrollments/{enrollment}/stop', [NurtureController::class, 'stop'])->middleware('permission:lead.update');
+    Route::get('nurture/sequences', [NurtureController::class, 'index'])->middleware('permission:lead.read');
+    Route::middleware('permission:nurture.manage')->group(function (): void {
+        Route::post('nurture/sequences', [NurtureController::class, 'store']);
+        Route::get('nurture/sequences/{sequence}', [NurtureController::class, 'show']);
+        Route::match(['put', 'patch'], 'nurture/sequences/{sequence}', [NurtureController::class, 'update']);
+        Route::delete('nurture/sequences/{sequence}', [NurtureController::class, 'destroy']);
+        Route::get('nurture/sequences/{sequence}/enrollments', [NurtureController::class, 'enrollments']);
+        Route::post('nurture/sequences/{sequence}/test', [NurtureController::class, 'test'])->middleware('throttle:10,1');
+    });
+
+    // --- Relatórios ---
+    Route::middleware('permission:report.read')->group(function (): void {
+        Route::get('reports/funnel', [ReportController::class, 'funnel']);
+        Route::get('reports/content', [ReportController::class, 'content']);
+        Route::get('reports/stale-posts', [ReportController::class, 'stalePosts']);
+        Route::get('ad-spends', [AdSpendController::class, 'index']);
+    });
+    Route::get('posts/{post}/performance', [ReportController::class, 'postPerformance'])->middleware('permission:post.read');
+    Route::get('posts/{post}/link-suggestions', [ReportController::class, 'linkSuggestions'])->middleware('permission:post.read');
+
+    // --- Integrações (Google Ads, Search Console, investimento) ---
+    Route::middleware('permission:integration.manage')->group(function (): void {
+        Route::post('ad-spends', [AdSpendController::class, 'store']);
+        Route::match(['put', 'patch'], 'ad-spends/{spend}', [AdSpendController::class, 'update']);
+        Route::delete('ad-spends/{spend}', [AdSpendController::class, 'destroy']);
+
+        Route::get('integrations/google-ads', [GoogleAdsController::class, 'show']);
+        Route::match(['put', 'patch'], 'integrations/google-ads', [GoogleAdsController::class, 'update']);
+        Route::post('integrations/google-ads/activate', [GoogleAdsController::class, 'activate']);
+        Route::post('integrations/google-ads/deactivate', [GoogleAdsController::class, 'deactivate']);
+        Route::get('integrations/google-ads/conversion-actions', [GoogleAdsController::class, 'conversionActions']);
+        Route::get('integrations/google-ads/uploads', [GoogleAdsController::class, 'uploads']);
+        Route::post('integrations/google-ads/retry', [GoogleAdsController::class, 'retry']);
+
+        Route::get('integrations/search-console', [SearchConsoleController::class, 'show']);
+        Route::match(['put', 'patch'], 'integrations/search-console', [SearchConsoleController::class, 'update']);
+        Route::post('integrations/search-console/activate', [SearchConsoleController::class, 'activate']);
+        Route::post('integrations/search-console/deactivate', [SearchConsoleController::class, 'deactivate']);
+        Route::post('integrations/search-console/sync', [SearchConsoleController::class, 'sync'])->middleware('throttle:5,1');
+    });
 
     // --- WhatsApp ---
     Route::get('whatsapp/account', [WhatsAppAccountController::class, 'show'])->middleware('permission:whatsapp.manage');

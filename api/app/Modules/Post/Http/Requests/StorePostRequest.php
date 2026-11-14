@@ -23,7 +23,8 @@ class StorePostRequest extends FormRequest
             'og_title' => ['nullable', 'string', 'max:160'], 'og_description' => ['nullable', 'string', 'max:320'], 'og_image' => ['nullable', 'string', 'max:2048'],
             'schema_type' => ['nullable', 'string', 'max:50'],
             'allow_indexing' => ['sometimes', 'boolean'], 'include_in_sitemap' => ['sometimes', 'boolean'], 'is_featured' => ['sometimes', 'boolean'],
-            'published_at' => ['nullable', 'date'],
+            'cta_offer' => ['nullable', 'string', 'max:120'], 'cta_text' => ['nullable', 'string', 'max:255'], 'cta_url' => ['nullable', 'string', 'max:2048'],
+            'published_at' => ['nullable', 'date', 'required_if:status,scheduled'],
             'categories' => ['nullable', 'array'], 'categories.*' => ['integer', 'exists:categories,id'],
             'tags' => ['nullable', 'array'], 'tags.*' => ['string', 'max:100'],
         ];

@@ -20,6 +20,7 @@ class UpdateLeadRequest extends FormRequest
             'email' => ['sometimes', 'nullable', 'email:rfc', 'max:160'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:30', 'regex:/^[\d\s()+.-]{8,30}$/'],
             'company' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'lost_reason' => ['sometimes', 'nullable', 'string', 'max:120'],
         ];
     }
 }

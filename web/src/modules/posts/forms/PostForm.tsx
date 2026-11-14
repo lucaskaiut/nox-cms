@@ -11,7 +11,7 @@ interface PostFormProps { mode: 'create' | 'edit'; defaultValues?: Partial<PostF
 export function PostForm({ mode, defaultValues, submitting, onSubmit }: PostFormProps) {
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
-    defaultValues: { title: '', slug: '', excerpt: '', content: '', featured_image: '', featured_image_alt: '', status: 'draft', meta_title: '', meta_description: '', canonical_url: '', og_title: '', og_description: '', og_image: '', schema_type: 'Article', allow_indexing: true, include_in_sitemap: true, is_featured: false, published_at: '', categories: [], tags: [], ...defaultValues },
+    defaultValues: { title: '', slug: '', excerpt: '', content: '', featured_image: '', featured_image_alt: '', status: 'draft', meta_title: '', meta_description: '', canonical_url: '', og_title: '', og_description: '', og_image: '', schema_type: 'Article', allow_indexing: true, include_in_sitemap: true, is_featured: false, published_at: '', categories: [], tags: [], cta_offer: '', cta_text: '', cta_url: '', ...defaultValues },
   })
 
   const handleSubmit = async (values: PostFormValues) => {
@@ -21,8 +21,10 @@ export function PostForm({ mode, defaultValues, submitting, onSubmit }: PostForm
       status: values.status, meta_title: values.meta_title || null, meta_description: values.meta_description || null,
       canonical_url: values.canonical_url || null, og_title: values.og_title || null, og_description: values.og_description || null,
       og_image: values.og_image || null, schema_type: values.schema_type || null, allow_indexing: values.allow_indexing,
-      include_in_sitemap: values.include_in_sitemap, is_featured: values.is_featured, published_at: values.published_at || null,
+      include_in_sitemap: values.include_in_sitemap, is_featured: values.is_featured,
+      published_at: values.published_at ? new Date(values.published_at).toISOString() : null,
       categories: values.categories, tags: values.tags,
+      cta_offer: values.cta_offer || null, cta_text: values.cta_text || null, cta_url: values.cta_url || null,
     }
     try { await onSubmit(payload) } catch (error) { if (isApiError(error) && error.status === 422) applyApiErrorsToForm(form, error) }
   }
@@ -38,6 +40,13 @@ export function PostForm({ mode, defaultValues, submitting, onSubmit }: PostForm
         <ImageUploader value={form.watch('featured_image') ? { url: form.watch('featured_image'), alt: form.watch('featured_image_alt') } : null} onChange={(v) => { form.setValue('featured_image', v?.url ?? ''); form.setValue('featured_image_alt', v?.alt ?? '') }} />
         <TextField name="featured_image_alt" label="Texto ALT" className="mt-4" />
       </Section></CardContent></Card>
+      <Card><CardContent><Section title="Chamada para ação (CTA)" description="A oferta que o site mostra ao final do post. Ela vai junto no lead, para você saber qual oferta converte mais.">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField name="cta_offer" label="Oferta" placeholder="Diagnóstico gratuito" hint="Nome curto, usado nos relatórios" />
+          <TextField name="cta_url" label="Link do botão" placeholder="/contato?oferta=diagnostico" />
+          <TextareaField name="cta_text" label="Texto da chamada" rows={2} className="sm:col-span-2" placeholder="Quer saber quanto custaria o seu sistema? Peça um diagnóstico gratuito." />
+        </div>
+      </Section></CardContent></Card>
       <Card><CardContent className="space-y-5">
         <Section title="SEO"><div className="grid gap-4 sm:grid-cols-2">
           <TextField name="meta_title" label="Meta título" hint="Até 160 caracteres" /><TextField name="canonical_url" label="URL canônica" placeholder="https://" />
@@ -50,7 +59,7 @@ export function PostForm({ mode, defaultValues, submitting, onSubmit }: PostForm
       </CardContent></Card>
       <Card><CardContent className="space-y-5">
         <Section title="Publicação"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <SelectField name="status" label="Status" options={POST_STATUS_OPTIONS} required /><TextField name="published_at" label="Publicado em" type="datetime-local" /><TextField name="schema_type" label="Schema type" placeholder="Article" />
+          <SelectField name="status" label="Status" options={POST_STATUS_OPTIONS} required /><TextField name="published_at" label={form.watch('status') === 'scheduled' ? 'Publicar em' : 'Publicado em'} type="datetime-local" hint={form.watch('status') === 'scheduled' ? 'O post é publicado automaticamente nesse horário' : undefined} /><TextField name="schema_type" label="Schema type" placeholder="Article" />
         </div><div className="grid gap-4 sm:grid-cols-3">
           <SwitchField name="is_featured" label="Destaque" /><SwitchField name="allow_indexing" label="Indexação" /><SwitchField name="include_in_sitemap" label="Sitemap" />
         </div></Section>

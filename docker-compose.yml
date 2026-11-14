@@ -59,6 +59,22 @@ services:
     networks:
       - nox
 
+  scheduler:
+    build:
+      context: ./docker/php
+    restart: unless-stopped
+    command: ["php", "artisan", "schedule:work"]
+    working_dir: /var/www/html
+    environment:
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    volumes:
+      - ./api:/var/www/html
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - nox
+
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped

@@ -20,10 +20,12 @@ import { Permission } from '@/shared/constants/permissions'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { usePermissions } from '@/shared/hooks/usePermissions'
 import { formatDateTime } from '@/shared/utils/format'
+import { useTagsQuery } from '@/modules/crm/hooks/useCrm'
 import { LeadEditModal } from '../components/LeadEditModal'
 import { useExportGoogleAds, useLeadsQuery } from '../hooks/useLeads'
 import {
   LEAD_CHANNEL_LABELS,
+  LEAD_SOURCE_LABELS,
   LEAD_STATUS_LABELS,
   LEAD_STATUS_OPTIONS,
   type Lead,
@@ -44,6 +46,9 @@ export default function LeadsListPage() {
   const debouncedRef = useDebounce(ref)
   const page = Number(searchParams.get('page') ?? 1)
   const status = searchParams.get('status') ?? ''
+  const tag = searchParams.get('tag') ?? ''
+  const post = searchParams.get('post') ?? ''
+  const tags = useTagsQuery()
   const { can } = usePermissions()
   const exportGoogleAds = useExportGoogleAds()
   const [editing, setEditing] = useState<Lead | null>(null)
@@ -51,8 +56,10 @@ export default function LeadsListPage() {
   const query = useLeadsQuery({
     page,
     per_page: 15,
-    ref: debouncedRef.trim() || undefined,
+    ...(/^NX-[2-9A-HJ-NP-Z]{6}$/i.test(debouncedRef.trim()) ? { ref: debouncedRef.trim() } : { search: debouncedRef.trim() || undefined }),
     status: status || undefined,
+    tag: tag || undefined,
+    post: post || undefined,
   })
 
   const updateParams = (next: Record<string, string>) =>
@@ -102,13 +109,10 @@ export default function LeadsListPage() {
       render: (lead) => (
         <div className="min-w-0">
           <span className="block text-foreground">
-            {LEAD_CHANNEL_LABELS[lead.channel] ?? lead.channel} ·{' '}
-            {lead.gclid || lead.gbraid || lead.wbraid
-              ? [lead.utm_source ?? 'google', lead.utm_medium ?? 'cpc'].join(' / ')
-              : 'orgânico / direto'}
+            {LEAD_CHANNEL_LABELS[lead.channel] ?? lead.channel} · {lead.source ? LEAD_SOURCE_LABELS[lead.source] : '—'}
           </span>
-          <span className="block max-w-56 truncate text-xs text-muted" title={lead.landing_path ?? undefined}>
-            {lead.landing_path ?? '—'}
+          <span className="block max-w-56 truncate text-xs text-muted" title={lead.post?.title ?? lead.landing_path ?? undefined}>
+            {lead.post ? `📝 ${lead.post.title}` : (lead.landing_path ?? '—')}
           </span>
         </div>
       ),
@@ -143,7 +147,7 @@ export default function LeadsListPage() {
       : []),
   ]
 
-  const filtered = Boolean(debouncedRef || status)
+  const filtered = Boolean(debouncedRef || status || tag || post)
 
   return (
     <Page>
@@ -164,7 +168,7 @@ export default function LeadsListPage() {
       <PageContent>
         <FilterBar>
           <SearchInput
-            placeholder="Código (ex.: NX-7K4P2Q)"
+            placeholder="Nome, e-mail, empresa ou código"
             value={ref}
             onChange={(e) => {
               setRef(e.target.value)
@@ -177,6 +181,20 @@ export default function LeadsListPage() {
             onChange={(e) => updateParams({ status: e.target.value, page: '' })}
             className="w-48"
           />
+          {(tags.data?.length ?? 0) > 0 && (
+            <Select
+              aria-label="Tag"
+              options={[{ value: '', label: 'Todas as tags' }, ...(tags.data ?? []).map((t) => ({ value: t.id, label: t.name }))]}
+              value={tag}
+              onChange={(e) => updateParams({ tag: e.target.value, page: '' })}
+              className="w-48"
+            />
+          )}
+          {post && (
+            <Button variant="secondary" size="sm" onClick={() => updateParams({ post: '', page: '' })}>
+              Filtrando por post · limpar
+            </Button>
+          )}
         </FilterBar>
 
         <DataTable

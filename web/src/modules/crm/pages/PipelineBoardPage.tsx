@@ -1,4 +1,8 @@
-import { useState, type DragEvent } from 'react'
+import { useEffect, useState, type DragEvent } from 'react'
+import { useSearchParams } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/shared/constants/query-keys'
+import { leadsService } from '@/modules/leads/services/leads.service'
 import { Plus, Settings2 } from 'lucide-react'
 import { Button, ButtonLink, Loading, Page, PageHeader, SearchInput } from '@/shared/design-system'
 import { Can } from '@/app/guards/PermissionGuard'
@@ -9,6 +13,7 @@ import { cn } from '@/shared/utils/cn'
 import type { Lead } from '@/modules/leads/services/leads.service'
 import { LeadCard } from '../components/LeadCard'
 import { LeadDetailModal } from '../components/LeadDetailModal'
+import { LostReasonModal } from '../components/LostReasonModal'
 import { NewLeadModal } from '../components/NewLeadModal'
 import { stageColor } from '../constants'
 import { useBoardQuery, useMoveLead } from '../hooks/useCrm'
@@ -25,9 +30,28 @@ export default function PipelineBoardPage() {
   const [overStage, setOverStage] = useState<string | null>(null)
   const [openLeadId, setOpenLeadId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [pendingLost, setPendingLost] = useState<{ lead: Lead; stageId: string } | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Link direto (?lead=uuid), usado nos alertas por e-mail/Telegram.
+  const linkedId = searchParams.get('lead')
+  useEffect(() => {
+    if (linkedId) setOpenLeadId(linkedId)
+  }, [linkedId])
 
   const stages = board.data ?? []
-  const openLead = stages.flatMap((stage) => stage.leads).find((lead) => lead.id === openLeadId)
+  const boardLead = stages.flatMap((stage) => stage.leads).find((lead) => lead.id === openLeadId)
+  const fetched = useQuery({
+    queryKey: queryKeys.leads.detail(openLeadId ?? ''),
+    queryFn: () => leadsService.get(openLeadId!),
+    enabled: Boolean(openLeadId) && !board.isPending && !boardLead,
+  })
+  const openLead = boardLead ?? fetched.data
+
+  const closeLead = () => {
+    setOpenLeadId(null)
+    if (linkedId) setSearchParams((params) => { params.delete('lead'); return params }, { replace: true })
+  }
 
   const onDragStart = (event: DragEvent, lead: Lead) => {
     event.dataTransfer.effectAllowed = 'move'
@@ -40,14 +64,18 @@ export default function PipelineBoardPage() {
     const leadId = event.dataTransfer.getData('text/plain') || dragging?.id
     setOverStage(null)
     setDragging(null)
-    if (leadId && dragging?.stage?.id !== stageId) moveLead.mutate({ leadId, stageId })
+    if (!leadId || dragging?.stage?.id === stageId) return
+    const target = stages.find((stage) => stage.id === stageId)
+    const lead = stages.flatMap((stage) => stage.leads).find((item) => item.id === leadId)
+    if (target?.outcome === 'lost' && lead) setPendingLost({ lead, stageId })
+    else moveLead.mutate({ leadId, stageId })
   }
 
   return (
     <Page className="flex h-[calc(100dvh-4.5rem)] min-h-0 flex-col gap-4 pb-2">
       <PageHeader
         title="Funil"
-        description="Arraste os cartões entre as etapas. Qualificado e Fechado entram na conversão offline do Google Ads."
+        description="Arraste os cartões entre as etapas. Qualificado e Fechado viram conversões offline no Google Ads."
         breadcrumb={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Funil' }]}
         actions={
           <div className="flex flex-wrap gap-2">
@@ -138,7 +166,17 @@ export default function PipelineBoardPage() {
       )}
 
       {openLead && (
-        <LeadDetailModal key={openLead.id} lead={openLead} stages={stages} search={debounced} onClose={() => setOpenLeadId(null)} />
+        <LeadDetailModal key={openLead.id} lead={openLead} stages={stages} search={debounced} onClose={closeLead} />
+      )}
+      {pendingLost && (
+        <LostReasonModal
+          leadName={pendingLost.lead.name || pendingLost.lead.ref}
+          onClose={() => setPendingLost(null)}
+          onConfirm={(reason) => {
+            moveLead.mutate({ leadId: pendingLost.lead.id, stageId: pendingLost.stageId, lostReason: reason })
+            setPendingLost(null)
+          }}
+        />
       )}
       {creating && <NewLeadModal stages={stages} onClose={() => setCreating(false)} />}
     </Page>

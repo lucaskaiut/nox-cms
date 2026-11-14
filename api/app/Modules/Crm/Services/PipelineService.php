@@ -6,6 +6,8 @@ use App\Modules\Crm\Enums\StageOutcome;
 use App\Modules\Crm\Models\LeadActivity;
 use App\Modules\Crm\Models\PipelineStage;
 use App\Modules\Lead\Enums\LeadStatus;
+use App\Modules\Lead\Events\LeadCreated;
+use App\Modules\Lead\Events\LeadStatusChanged;
 use App\Modules\Lead\Models\Lead;
 use App\Modules\Lead\Support\LeadRef;
 use App\Modules\User\Models\User;
@@ -75,6 +77,12 @@ class PipelineService
             if ($status->isQualified()) {
                 $stage->leads()->whereNull('qualified_at')->update(['qualified_at' => now()]);
             }
+            if ($status === LeadStatus::WON) {
+                $stage->leads()->whereNull('won_at')->update(['won_at' => now()]);
+            }
+            if ($status === LeadStatus::LOST) {
+                $stage->leads()->whereNull('lost_at')->update(['lost_at' => now()]);
+            }
         }
 
         return $stage->refresh()->loadCount('leads');
@@ -133,7 +141,8 @@ class PipelineService
                     ->orWhere('email', 'like', "%{$search}%")));
 
             $stage->setAttribute('total', (clone $query)->count());
-            $stage->setRelation('leads', $query->with(['conversation', 'stage'])
+            $stage->setRelation('leads', $query->with(['conversation', 'stage', 'tags'])
+                ->withCount(['tasks as open_tasks_count' => fn ($q) => $q->whereNull('completed_at')])
                 ->orderByDesc('last_activity_at')->orderByDesc('id')
                 ->limit(self::BOARD_LIMIT)->get());
         }
@@ -141,26 +150,65 @@ class PipelineService
         return $stages;
     }
 
-    public function moveLead(Lead $lead, PipelineStage $stage, ?User $user): Lead
+    public function moveLead(Lead $lead, PipelineStage $stage, ?User $user, ?string $lostReason = null): Lead
     {
         if ($lead->stage_id === $stage->id && $lead->status !== LeadStatus::SPAM) {
+            if ($lostReason !== null && $lead->status === LeadStatus::LOST && $lead->lost_reason !== $lostReason) {
+                $lead->forceFill(['lost_reason' => $lostReason])->save();
+                $this->log($lead, LeadActivity::NOTE, "Motivo da perda: {$lostReason}", null, $user);
+            }
+
             return $lead;
         }
 
         $from = $lead->stage;
+        $previousStatus = $lead->status;
         $lead->stage()->associate($stage);
         $lead->stage_changed_at = now();
-        $lead->status = $stage->outcome->leadStatus();
-        if ($lead->status->isQualified() && $lead->qualified_at === null) {
-            $lead->qualified_at = now();
-        }
+        $this->applyStatus($lead, $stage->outcome->leadStatus(), $lostReason);
         $lead->save();
 
-        $this->log($lead, LeadActivity::STAGE_CHANGED, null, [
-            'from' => $from?->name, 'to' => $stage->name, 'outcome' => $stage->outcome->value,
-        ], $user);
+        $meta = ['from' => $from?->name, 'to' => $stage->name, 'outcome' => $stage->outcome->value];
+        if ($lead->status === LeadStatus::LOST && $lead->lost_reason) {
+            $meta['lost_reason'] = $lead->lost_reason;
+        }
+        $this->log($lead, LeadActivity::STAGE_CHANGED, null, $meta, $user);
 
-        return $lead->refresh()->load(['stage', 'conversation']);
+        if ($previousStatus !== $lead->status) {
+            LeadStatusChanged::dispatch($lead, $previousStatus);
+        }
+
+        return $lead->refresh()->load(['stage', 'conversation', 'tags', 'post']);
+    }
+
+    /**
+     * Aplica um status e as datas que dependem dele (qualificado, ganho,
+     * perdido). Não salva: quem chama decide quando persistir.
+     */
+    public function applyStatus(Lead $lead, LeadStatus $status, ?string $lostReason = null): void
+    {
+        $lead->status = $status;
+
+        if ($status->isQualified() && $lead->qualified_at === null) {
+            $lead->qualified_at = now();
+        }
+
+        if ($status === LeadStatus::WON) {
+            $lead->won_at ??= now();
+        }
+
+        if ($status === LeadStatus::LOST) {
+            if ($lead->getOriginal('status') !== LeadStatus::LOST || $lead->lost_at === null) {
+                $lead->lost_at = now();
+            }
+            if ($lostReason !== null) {
+                $lead->lost_reason = $lostReason;
+            }
+        } elseif ($lead->isDirty('status')) {
+            // Reaberto/ganho: limpa a perda anterior para não poluir o relatório.
+            $lead->lost_at = null;
+            $lead->lost_reason = null;
+        }
     }
 
     public function addNote(Lead $lead, string $body, ?User $user): LeadActivity
@@ -189,18 +237,16 @@ class PipelineService
         $lead = new Lead(Arr::only($data, ['name', 'email', 'phone', 'company', 'message', 'notes']));
         $lead->ref = $this->uniqueRef();
         $lead->channel = $channel;
-        $lead->status = $stage->outcome->leadStatus();
+        $this->applyStatus($lead, $stage->outcome->leadStatus(), $data['lost_reason'] ?? null);
         $lead->stage()->associate($stage);
         $lead->stage_changed_at = now();
         $lead->contacted_at = now();
-        if ($lead->status->isQualified()) {
-            $lead->qualified_at = now();
-        }
         $lead->save();
 
         $this->log($lead, LeadActivity::CREATED, null, ['channel' => $channel], $user);
+        LeadCreated::dispatch($lead);
 
-        return $lead->refresh()->load(['stage', 'conversation']);
+        return $lead->refresh()->load(['stage', 'conversation', 'tags', 'post']);
     }
 
     public function uniqueRef(): string

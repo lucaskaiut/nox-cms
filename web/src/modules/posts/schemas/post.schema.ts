@@ -9,6 +9,7 @@ export const postSchema = z.object({
   og_title: z.string(), og_description: z.string(), og_image: z.string(),
   schema_type: z.string(), allow_indexing: z.boolean(), include_in_sitemap: z.boolean(), is_featured: z.boolean(),
   published_at: z.string(), categories: z.array(z.number()), tags: z.array(z.string()),
-})
+  cta_offer: z.string().max(120, 'Até 120 caracteres'), cta_text: z.string().max(255, 'Até 255 caracteres'), cta_url: z.string().max(2048),
+}).refine((v) => v.status !== 'scheduled' || v.published_at !== '', { path: ['published_at'], message: 'Informe quando o post deve ser publicado' })
 
 export type PostFormValues = z.infer<typeof postSchema>

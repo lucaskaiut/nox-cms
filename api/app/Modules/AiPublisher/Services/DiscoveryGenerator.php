@@ -24,10 +24,10 @@ class DiscoveryGenerator
             'recommended_flow' => [
                 '1. Call GET /api/ai/discovery to see available resources.',
                 '2. Call GET /api/ai/schema/post to understand required/optional fields.',
-                '3. Call GET /api/ai/editorial-guide for tone and content rules.',
+                '3. Call GET /api/ai/editorial-guide for tone, content rules and performance_insights (topics, posts and offers that generate leads and sales — prioritize them).',
                 '4. Call GET /api/categories to list existing categories.',
                 '5. Create a category via POST /api/categories if needed.',
-                '6. Generate content following the editorial guide.',
+                '6. Generate content following the editorial guide. Fill cta_offer/cta_text with the best converting offer for the topic.',
                 '7. Call POST /api/ai/posts to submit the post (status defaults to draft if omitted).',
                 '8. To publish directly, set `status` to `published` in the payload.',
             ],

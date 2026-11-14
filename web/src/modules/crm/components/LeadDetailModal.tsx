@@ -1,17 +1,23 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
-import { ArrowRight, Mail, MessageCircle, Pencil, Phone, StickyNote } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
+import { ArrowRight, FileText, Mail, MessageCircle, Pencil, Phone, StickyNote, Target } from 'lucide-react'
 import { Badge, Button, Field, Input, Modal, Select, Spinner, Textarea } from '@/shared/design-system'
 import { Can } from '@/app/guards/PermissionGuard'
 import { Permission } from '@/shared/constants/permissions'
 import { usePermissions } from '@/shared/hooks/usePermissions'
 import { formatDateTime, formatRelative } from '@/shared/utils/format'
 import { useUpdateLead } from '@/modules/leads/hooks/useLeads'
-import { LEAD_CHANNEL_LABELS, type Lead } from '@/modules/leads/services/leads.service'
+import { LEAD_CHANNEL_LABELS, LEAD_SOURCE_LABELS, leadsService, type Lead } from '@/modules/leads/services/leads.service'
+import { queryKeys } from '@/shared/constants/query-keys'
 import { useStartConversation } from '@/modules/whatsapp/hooks/useWhatsApp'
 import { stageColor } from '../constants'
 import { useActivitiesQuery, useAddNote, useMoveLead } from '../hooks/useCrm'
 import type { LeadActivity, PipelineStage } from '../services/crm.service'
+import { LeadNurtureSection } from './LeadNurtureSection'
+import { LeadTasksSection } from './LeadTasksSection'
+import { LostReasonModal } from './LostReasonModal'
+import { TagEditor } from './TagEditor'
 
 interface LeadDetailModalProps {
   lead: Lead
@@ -25,9 +31,18 @@ function activityText(activity: LeadActivity): string {
     case 'created':
       return `Lead criado (${LEAD_CHANNEL_LABELS[activity.meta?.channel ?? ''] ?? activity.meta?.channel ?? 'site'})`
     case 'stage_changed':
-      return activity.meta?.from ? `Movido de ${activity.meta.from} para ${activity.meta.to}` : `Colocado em ${activity.meta?.to}`
+      return (activity.meta?.from ? `Movido de ${activity.meta.from} para ${activity.meta.to}` : `Colocado em ${activity.meta?.to}`) +
+        (activity.meta?.lost_reason ? ` (motivo: ${activity.meta.lost_reason})` : '')
     case 'whatsapp_linked':
       return activity.body ?? 'Conversa do WhatsApp vinculada'
+    case 'email_sent':
+      return `E-mail enviado: ${activity.body ?? ''}`
+    case 'task_created':
+      return `Tarefa criada: ${activity.body ?? ''}`
+    case 'task_completed':
+      return `Tarefa concluída: ${activity.body ?? ''}`
+    case 'conversion_uploaded':
+      return `Conversão "${activity.meta?.kind === 'won' ? 'ganho' : 'qualificado'}" enviada ao Google Ads`
     default:
       return activity.body ?? ''
   }
@@ -52,9 +67,17 @@ export function LeadDetailModal({ lead: initial, stages, search, onClose }: Lead
   const updateLead = useUpdateLead()
   const startConversation = useStartConversation()
   const fromAd = Boolean(lead.gclid || lead.gbraid || lead.wbraid)
+  const detail = useQuery({ queryKey: queryKeys.leads.detail(lead.id), queryFn: () => leadsService.get(lead.id) })
+  const uploads = detail.data?.conversion_uploads ?? []
+  const [askLostFor, setAskLostFor] = useState<string | null>(null)
 
-  const move = (stageId: string) =>
-    moveLead.mutate({ leadId: lead.id, stageId }, { onSuccess: (updated) => setLead(updated) })
+  const move = (stageId: string, lostReason?: string | null) =>
+    moveLead.mutate({ leadId: lead.id, stageId, lostReason }, { onSuccess: (updated) => setLead(updated), onSettled: () => setAskLostFor(null) })
+
+  const changeStage = (stageId: string) => {
+    if (stages.find((stage) => stage.id === stageId)?.outcome === 'lost') setAskLostFor(stageId)
+    else move(stageId)
+  }
 
   const saveContact = (event: FormEvent) => {
     event.preventDefault()
@@ -114,7 +137,7 @@ export function LeadDetailModal({ lead: initial, stages, search, onClose }: Lead
                 id="lead-stage"
                 value={lead.stage?.id ?? ''}
                 disabled={!can(Permission.LEAD_UPDATE) || moveLead.isPending}
-                onChange={(event) => move(event.target.value)}
+                onChange={(event) => changeStage(event.target.value)}
                 options={[
                   ...(lead.stage ? [] : [{ value: '', label: 'Fora do funil' }]),
                   ...stages.map((stage) => ({ value: stage.id, label: stage.name })),
@@ -132,6 +155,20 @@ export function LeadDetailModal({ lead: initial, stages, search, onClose }: Lead
             </Button>
           )}
         </div>
+
+        <TagEditor leadId={lead.id} tags={lead.tags ?? []} editable={can(Permission.LEAD_UPDATE)} onChange={(tags) => setLead((c) => ({ ...c, tags }))} />
+
+        {lead.status === 'lost' && (
+          <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+            Perdido{lead.lost_at ? ` em ${formatDateTime(lead.lost_at)}` : ''}
+            {lead.lost_reason ? ` · motivo: ${lead.lost_reason}` : ' · motivo não informado'}
+            {can(Permission.LEAD_UPDATE) && (
+              <button type="button" className="ml-2 underline" onClick={() => setAskLostFor(lead.stage?.id ?? '')}>
+                {lead.lost_reason ? 'alterar' : 'informar'}
+              </button>
+            )}
+          </p>
+        )}
 
         <section aria-labelledby="lead-contact" className="rounded-lg border border-surface-3 p-4">
           <div className="flex items-center justify-between gap-2">
@@ -216,15 +253,45 @@ export function LeadDetailModal({ lead: initial, stages, search, onClose }: Lead
             Origem
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-muted">
-            {fromAd ? <Badge variant="primary">Google Ads</Badge> : <Badge variant="neutral">Sem anúncio</Badge>}
+            {lead.source && <Badge variant={lead.source === 'paid' ? 'primary' : lead.source === 'blog' ? 'success' : 'neutral'}>{LEAD_SOURCE_LABELS[lead.source]}</Badge>}
+            {!lead.source && (fromAd ? <Badge variant="primary">Google Ads</Badge> : <Badge variant="neutral">Sem anúncio</Badge>)}
+            {lead.post && (
+              <Link to={`/posts/${lead.post.id}/edit`} className="flex items-center gap-1 text-xs text-foreground underline">
+                <FileText className="size-3.5" aria-hidden="true" />
+                {lead.post.title}
+              </Link>
+            )}
+            {lead.cta && (
+              <span className="flex items-center gap-1 text-xs">
+                <Target className="size-3.5" aria-hidden="true" />
+                {lead.cta}
+              </span>
+            )}
             {lead.landing_path && <span className="font-mono text-xs">{lead.landing_path}</span>}
             {lead.utm_term && <span className="text-xs">termo: {lead.utm_term}</span>}
             {lead.qualified_at && <span className="text-xs">qualificado em {formatDateTime(lead.qualified_at)}</span>}
           </div>
-          {fromAd && !lead.gclid && (
-            <p className="mt-1 text-xs text-muted">Clique de iPhone (gbraid/wbraid): não entra na exportação por GCLID.</p>
+          {fromAd && !lead.gclid && uploads.length === 0 && (
+            <p className="mt-1 text-xs text-muted">Clique de iPhone (gbraid/wbraid): não entra na exportação CSV por GCLID, só no envio automático.</p>
+          )}
+          {uploads.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs">
+              {uploads.map((u) => (
+                <li key={u.kind} className="text-muted">
+                  Conversão “{u.kind === 'won' ? 'ganho' : 'qualificado'}” no Google Ads:{' '}
+                  <span className={u.status === 'uploaded' ? 'text-success' : u.status === 'failed' ? 'text-danger' : 'text-warning'}>
+                    {u.status === 'uploaded' ? `enviada ${formatDateTime(u.uploaded_at)}` : u.status === 'failed' ? 'falhou' : 'na fila'}
+                  </span>
+                  {u.error && u.status !== 'uploaded' && <span className="block text-subtle">{u.error}</span>}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
+
+        <LeadTasksSection leadId={lead.id} />
+
+        <LeadNurtureSection lead={lead} />
 
         <section aria-labelledby="lead-history">
           <h3 id="lead-history" className="text-sm font-semibold text-foreground">
@@ -273,6 +340,23 @@ export function LeadDetailModal({ lead: initial, stages, search, onClose }: Lead
           )}
         </section>
       </div>
+      {askLostFor !== null && (
+        <LostReasonModal
+          leadName={lead.name || lead.ref}
+          loading={moveLead.isPending || updateLead.isPending}
+          onClose={() => setAskLostFor(null)}
+          onConfirm={(reason) => {
+            if (askLostFor === lead.stage?.id || askLostFor === '') {
+              updateLead.mutate(
+                { id: lead.id, lost_reason: reason },
+                { onSuccess: (updated) => setLead(updated), onSettled: () => setAskLostFor(null) },
+              )
+            } else {
+              move(askLostFor, reason)
+            }
+          }}
+        />
+      )}
     </Modal>
   )
 }

@@ -12,6 +12,9 @@ import {
 } from '@/shared/design-system'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { cn } from '@/shared/utils/cn'
+import { Permission } from '@/shared/constants/permissions'
+import { usePermissions } from '@/shared/hooks/usePermissions'
+import { FunnelDashboard } from '@/modules/reports/components/FunnelDashboard'
 import { useDashboardStats, type DashboardStat } from '../hooks/useDashboardStats'
 
 function StatCard({
@@ -62,15 +65,18 @@ export default function DashboardPage() {
   const user = useSessionStore((state) => state.user)
   const tenant = useSessionStore((state) => state.tenant)
   const stats = useDashboardStats()
+  const { can } = usePermissions()
 
   return (
     <Page>
       <PageHeader
         title={`Olá, ${user?.name.split(' ')[0] ?? ''}`}
-        description="Aqui está um resumo da sua organização."
+        description={can(Permission.REPORT_READ) ? 'Como o site e o funil estão trazendo clientes.' : 'Aqui está um resumo da sua organização.'}
       />
 
       <PageContent>
+        {can(Permission.REPORT_READ) && <FunnelDashboard />}
+
         <Card>
           <CardContent className="flex flex-wrap items-center gap-4">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">

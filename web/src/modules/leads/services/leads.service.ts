@@ -35,6 +35,33 @@ export interface Lead {
   stage_changed_at?: string | null
   last_activity_at?: string | null
   conversation?: LeadConversationRef | null
+  source?: LeadSource
+  cta?: string | null
+  lost_reason?: string | null
+  lost_at?: string | null
+  won_at?: string | null
+  email_opt_out?: boolean
+  post?: { id: string; title: string; slug: string } | null
+  tags?: LeadTagRef[]
+  open_tasks_count?: number
+  conversion_uploads?: Array<{ kind: 'qualified' | 'won'; status: 'pending' | 'uploaded' | 'failed'; error: string | null; uploaded_at: string | null }>
+}
+
+export type LeadSource = 'paid' | 'blog' | 'referral' | 'whatsapp' | 'direct' | 'manual'
+
+export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
+  paid: 'Anúncio',
+  blog: 'Blog',
+  referral: 'Campanha',
+  whatsapp: 'WhatsApp',
+  direct: 'Site',
+  manual: 'Manual',
+}
+
+export interface LeadTagRef {
+  id: string
+  name: string
+  color: string
 }
 
 export interface LeadStageRef {
@@ -70,6 +97,8 @@ export const LEAD_STATUS_OPTIONS = Object.entries(LEAD_STATUS_LABELS).map(([valu
 export interface LeadFilters extends ListParams {
   status?: string
   ref?: string
+  tag?: string
+  post?: string
 }
 
 export interface LeadPayload {
@@ -80,6 +109,7 @@ export interface LeadPayload {
   email?: string | null
   phone?: string | null
   company?: string | null
+  lost_reason?: string | null
 }
 
 export const leadsService = {
@@ -97,6 +127,12 @@ export const leadsService = {
 
   async update(id: string, payload: LeadPayload): Promise<Lead> {
     const response = await http.patch<ApiResponse<Lead>>(`/leads/${id}`, payload)
+
+    return response.data.data
+  },
+
+  async syncTags(id: string, tags: string[]): Promise<Lead> {
+    const response = await http.put<ApiResponse<Lead>>(`/leads/${id}/tags`, { tags })
 
     return response.data.data
   },

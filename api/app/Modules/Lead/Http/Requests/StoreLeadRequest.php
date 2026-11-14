@@ -26,6 +26,9 @@ class StoreLeadRequest extends FormRequest
             'utm_source' => $param, 'utm_medium' => $param, 'utm_campaign' => $param,
             'utm_term' => $param, 'utm_content' => $param,
             'landing_path' => $path, 'click_path' => $path,
+            // Post de origem (slug) e oferta/CTA clicada, enviados pelo site.
+            'post_slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
+            'cta' => ['nullable', 'string', 'max:120'],
             'captured_at' => ['nullable', 'date', 'before_or_equal:now'],
             'name' => ['exclude_unless:channel,form', 'required', 'string', 'max:120'],
             'email' => ['exclude_unless:channel,form', 'nullable', 'required_without:phone', 'email:rfc', 'max:160'],

@@ -16,6 +16,14 @@ use App\Modules\Webhook\Models\Webhook;
 use App\Modules\Webhook\Policies\WebhookPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use App\Modules\Crm\Listeners\NotifyNewLead;
+use App\Modules\Crm\Listeners\SendAutoReply;
+use App\Modules\GoogleAds\Listeners\QueueConversionUploads;
+use App\Modules\Lead\Events\LeadCreated;
+use App\Modules\Lead\Events\LeadStatusChanged;
+use App\Modules\Lead\Events\LeadTagged;
+use App\Modules\Nurture\Listeners\HandleNurtureTriggers;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -37,6 +45,16 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiting();
         $this->configurePolicies();
+        $this->configureEvents();
+    }
+
+    private function configureEvents(): void
+    {
+        Event::listen(LeadCreated::class, NotifyNewLead::class);
+        Event::listen(LeadCreated::class, SendAutoReply::class);
+        Event::listen(LeadStatusChanged::class, QueueConversionUploads::class);
+        Event::listen(LeadStatusChanged::class, [HandleNurtureTriggers::class, 'handleStatusChanged']);
+        Event::listen(LeadTagged::class, [HandleNurtureTriggers::class, 'handleTagged']);
     }
 
     private function configureRateLimiting(): void
